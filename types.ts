@@ -1,7 +1,24 @@
-export type UserRole = 'student' | 'counselor' | 'admin';
-export type AppointmentStatus = 'pending' | 'upcoming' | 'cancelled' | 'completed' | 'rescheduled' | 'no-show';
-export type AppointmentType = 'initial' | 'follow-up' | 'crisis' | 'check-in';
-export type MoodKey = 'happy' | 'calm' | 'anxious' | 'sad' | 'angry' | 'overwhelmed';
+import type { MoodKey } from './constants/theme';
+
+export type UserRole = 'student' | 'counselor';
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isAnonymous?: boolean;
+  year?: string;
+  major?: string;
+  phone?: string;
+  bio?: string;
+  title?: string;
+  specialties?: string[];
+  avatarColor: string;
+  onboardingComplete: boolean;
+  consentAccepted: boolean;
+  hideFromDirectory?: boolean;
+};
 
 export type MoodEntry = {
   id: string;
@@ -11,6 +28,20 @@ export type MoodEntry = {
   note: string;
   createdAt: string;
 };
+
+export type Counselor = {
+  id: string;
+  name: string;
+  title: string;
+  specialties: string[];
+  bio: string;
+  rating: number;
+  years: number;
+  avatarColor: string;
+};
+
+export type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled' | 'pending';
+export type AppointmentType = 'video' | 'chat' | 'in-person';
 
 export type Appointment = {
   id: string;
@@ -22,24 +53,42 @@ export type Appointment = {
   type: AppointmentType;
   status: AppointmentStatus;
   notes: string;
+  clinicalNotes?: string;
   isAnonymous?: boolean;
+};
+
+export type Message = {
+  id: string;
+  counselorId: string;
+  userId: string;
+  sender: 'student' | 'counselor';
+  text: string;
+  createdAt: string;
+};
+
+export type CrisisResource = {
+  id: string;
+  title: string;
+  description: string;
+  phone?: string;
+  category: 'immediate' | 'campus' | 'coping';
 };
 
 export type EmergencyContact = {
   id: string;
   userId: string;
   name: string;
-  relationship: string;
+  relation: string;
   phone: string;
   email?: string;
+  shareEmergencyStatus?: boolean;
 };
 
 export type CrisisPlan = {
-  id?: string;
   userId: string;
-  title: string;
-  steps: string[];
-  safePeople?: string[];
+  warningSigns: string;
+  copingStrategies: string;
+  reasonsToLive: string;
 };
 
 export type SessionFeedback = {
@@ -49,7 +98,7 @@ export type SessionFeedback = {
   counselorId: string;
   rating: number;
   comment: string;
-  hideNameFromCounselor: boolean;
+  hideNameFromCounselor?: boolean;
   createdAt: string;
 };
 
@@ -70,64 +119,47 @@ export type AppSettings = {
   shareLocationDuringCrisis?: boolean;
 };
 
-export type User = {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  phone?: string;
-  avatarColor?: string;
-  onboardingComplete: boolean;
-  consentAccepted: boolean;
-  isAnonymous?: boolean;
-};
-
-export type CounselorAvailabilityDay = {
-  day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
-  enabled: boolean;
-  start: string;
-  end: string;
-};
-
 export type CounselorAvailability = {
   counselorId: string;
   isAcceptingSessions: boolean;
-  recurringWeekly: boolean;
-  sessionFormats: Array<{ key: 'standard' | 'quick' | 'urgent'; enabled: boolean }>;
-  deliveryMethods: Array<'video' | 'chat' | 'in-person'>;
-  days: CounselorAvailabilityDay[];
+  recurringWeekly?: boolean;
+  sessionFormats?: { key: 'standard' | 'quick' | 'urgent'; enabled: boolean }[];
+  deliveryMethods?: AppointmentType[];
+  days: {
+    day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
+    enabled: boolean;
+    start: string;
+    end: string;
+  }[];
+  bufferMin?: number;
 };
 
 export type CounselorNotification = {
   id: string;
-  userId?: string;
-  counselorId?: string;
-  type: string;
+  counselorId: string;
+  title: string;
   message: string;
-  read: boolean;
+  type: 'request' | 'chat' | 'crisis' | 'system';
   createdAt: string;
+  read: boolean;
+  appointmentId?: string;
+  studentId?: string;
 };
 
 export type AppState = {
   users: User[];
   currentUserId: string | null;
+  introCompleted?: boolean;
+  introConsentAccepted?: boolean;
   moods: MoodEntry[];
+  counselors: Counselor[];
   appointments: Appointment[];
-  messages: Array<{
-    id: string;
-    counselorId: string;
-    userId: string;
-    sender: 'student' | 'counselor';
-    text: string;
-    createdAt: string;
-  }>;
+  messages: Message[];
+  crisisResources: CrisisResource[];
   contacts: EmergencyContact[];
   crisisPlans: CrisisPlan[];
   feedback: SessionFeedback[];
   settings: AppSettings[];
   availabilities?: CounselorAvailability[];
   notifications?: CounselorNotification[];
-  introCompleted?: boolean;
 };
-
-export type AppContextState = AppState;
