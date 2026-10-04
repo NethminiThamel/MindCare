@@ -28,7 +28,7 @@ export default function FeedbackSessions() {
             return (
               <Card key={appointment.id} style={styles.card}>
                 <View style={styles.row}>
-                  <Avatar name={counselor.name} color={counselor.avatarColor} size={40} />
+                  <Avatar name={counselor.name} color={counselor.avatarColor} size={40} profileType="counselor" />
                   <View style={styles.copy}>
                     <Text style={styles.name}>{counselor.name}</Text>
                     <Text style={styles.date}>{formatDate(appointment.date)}</Text>

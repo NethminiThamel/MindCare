@@ -1,20 +1,21 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import React from "react";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-  type StyleProp,
-  type TextInputProps,
-  type ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../constants/theme';
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
+    type StyleProp,
+    type TextInputProps,
+    type ViewStyle,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "../constants/theme";
 
 export function Screen({
   children,
@@ -26,14 +27,19 @@ export function Screen({
   padded?: boolean;
 }) {
   const inner = (
-    <View style={[scroll ? styles.body : styles.fixedBody, padded && styles.padded]}>
+    <View
+      style={[scroll ? styles.body : styles.fixedBody, padded && styles.padded]}
+    >
       {children}
     </View>
   );
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
           {inner}
         </ScrollView>
       ) : (
@@ -54,30 +60,50 @@ export function BackHeader({
 }) {
   return (
     <View style={styles.header}>
-      <Pressable onPress={onBack ?? (() => router.back())} hitSlop={12} style={styles.backBtn}>
+      <Pressable
+        onPress={onBack ?? (() => router.back())}
+        hitSlop={12}
+        style={styles.backBtn}
+      >
         <Ionicons name="chevron-back" size={22} color={colors.tealDark} />
         <Text style={styles.backText}>Back</Text>
       </Pressable>
       <Text style={styles.headerTitle}>{title}</Text>
-      <View style={{ minWidth: 48, alignItems: 'flex-end' }}>{right}</View>
+      <View style={{ minWidth: 48, alignItems: "flex-end" }}>{right}</View>
     </View>
   );
 }
 
-export function Header({ title, onBack }: { title: string; onBack?: () => void }) {
+export function Header({
+  title,
+  onBack,
+}: {
+  title: string;
+  onBack?: () => void;
+}) {
   return (
     <View style={styles.header}>
-      <Pressable onPress={onBack ?? (() => router.back())} hitSlop={12} style={styles.backBtn}>
+      <Pressable
+        onPress={onBack ?? (() => router.back())}
+        hitSlop={12}
+        style={styles.backBtn}
+      >
         <Ionicons name="chevron-back" size={22} color={colors.tealDark} />
         <Text style={styles.backText}>Back</Text>
       </Pressable>
       <Text style={styles.headerTitle}>{title}</Text>
-      <View style={{ minWidth: 48, alignItems: 'flex-end' }} />
+      <View style={{ minWidth: 48, alignItems: "flex-end" }} />
     </View>
   );
 }
 
-export function Card({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Card({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
@@ -98,7 +124,10 @@ export function PrimaryButton({
       disabled={disabled}
       style={({ pressed }) => [
         styles.primary,
-        { backgroundColor: color, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        {
+          backgroundColor: color,
+          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+        },
       ]}
     >
       <Text style={styles.primaryText}>{label}</Text>
@@ -106,7 +135,13 @@ export function PrimaryButton({
   );
 }
 
-export function GhostButton({ label, onPress }: { label: string; onPress: () => void }) {
+export function GhostButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable onPress={onPress} style={styles.ghost}>
       <Text style={styles.ghostText}>{label}</Text>
@@ -132,36 +167,135 @@ export function Field({
   );
 }
 
-export function Avatar({ name, color, size = 44 }: { name: string; color: string; size?: number }) {
+export const studentAvatarOptions = [
+  {
+    id: "default",
+    label: "Default student",
+    source: require("../assets/images/student-profile.jpg"),
+  },
+  {
+    id: "classic",
+    label: "Classic",
+    source: require("../assets/images/student-profile.jpg"),
+  },
+  {
+    id: "clean",
+    label: "Clean look",
+    source: require("../assets/images/student-profile.jpg"),
+  },
+] as const;
+
+export function Avatar({
+  name,
+  color,
+  size = 44,
+  profileType,
+  profileImage,
+}: {
+  name: string;
+  color: string;
+  size?: number;
+  profileType?: "student" | "counselor";
+  profileImage?: string;
+}) {
   const initials = name
-    .split(' ')
+    .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((p) => p[0])
-    .join('')
+    .join("")
     .toUpperCase();
+
+  const counselorImages = [
+    require("../assets/images/counselor1.jpg"),
+    require("../assets/images/counselor2.jpg"),
+    require("../assets/images/counselor3.jpg"),
+    require("../assets/images/counselor-profile.jpg"),
+  ];
+
+  const selectedStudentOption = studentAvatarOptions.find(
+    (option) => option.id === profileImage,
+  );
+  const customProfileImage =
+    typeof profileImage === "string" &&
+    profileImage.trim().length > 0 &&
+    profileImage !== "default" &&
+    !selectedStudentOption &&
+    (profileImage.startsWith("file://") ||
+      profileImage.startsWith("content://") ||
+      profileImage.startsWith("blob:") ||
+      profileImage.startsWith("data:") ||
+      profileImage.startsWith("http://") ||
+      profileImage.startsWith("https://"))
+      ? { uri: profileImage }
+      : undefined;
+
+  const studentImage =
+    selectedStudentOption?.source ?? studentAvatarOptions[0].source;
+
+  const photoSource =
+    customProfileImage ??
+    (profileType === "counselor"
+      ? counselorImages[
+          [...name.toLowerCase()].reduce(
+            (sum, char) => sum + char.charCodeAt(0),
+            0,
+          ) % counselorImages.length
+        ]
+      : studentImage);
+
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
+        overflow: "hidden",
         backgroundColor: color,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <Text style={{ color: '#fff', fontWeight: '700', fontSize: size * 0.36 }}>{initials}</Text>
+      {profileType ? (
+        <Image
+          source={photoSource}
+          style={{ width: size, height: size }}
+          contentFit="cover"
+          accessibilityLabel={`${profileType} profile picture`}
+        />
+      ) : (
+        <Text
+          style={{ color: "#fff", fontWeight: "700", fontSize: size * 0.36 }}
+        >
+          {initials}
+        </Text>
+      )}
     </View>
   );
 }
 
-export function Pill({ text, tone = 'teal' }: { text: string; tone?: 'teal' | 'coral' | 'muted' }) {
-  const bg = tone === 'coral' ? colors.coralSoft : tone === 'muted' ? colors.line : colors.tealSoft;
-  const fg = tone === 'coral' ? colors.coral : tone === 'muted' ? colors.muted : colors.tealDark;
+export function Pill({
+  text,
+  tone = "teal",
+}: {
+  text: string;
+  tone?: "teal" | "coral" | "muted";
+}) {
+  const bg =
+    tone === "coral"
+      ? colors.coralSoft
+      : tone === "muted"
+        ? colors.line
+        : colors.tealSoft;
+  const fg =
+    tone === "coral"
+      ? colors.coral
+      : tone === "muted"
+        ? colors.muted
+        : colors.tealDark;
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
-      <Text style={{ color: fg, fontSize: 14, fontWeight: '600' }}>{text}</Text>
+      <Text style={{ color: fg, fontSize: 14, fontWeight: "600" }}>{text}</Text>
     </View>
   );
 }
@@ -201,8 +335,14 @@ export function MenuRow({
   return (
     <Pressable onPress={onPress} style={styles.menuRow}>
       <View style={styles.menuLeft}>
-        <Ionicons name={icon} size={20} color={danger ? colors.coral : colors.tealDark} />
-        <Text style={[styles.menuLabel, danger && { color: colors.coral }]}>{label}</Text>
+        <Ionicons
+          name={icon}
+          size={20}
+          color={danger ? colors.coral : colors.tealDark}
+        />
+        <Text style={[styles.menuLabel, danger && { color: colors.coral }]}>
+          {label}
+        </Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={colors.muted} />
     </Pressable>
@@ -212,7 +352,9 @@ export function MenuRow({
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <Card>
-      <Text style={{ fontWeight: '700', color: colors.text, marginBottom: 6 }}>{title}</Text>
+      <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 6 }}>
+        {title}
+      </Text>
       <Text style={{ color: colors.muted, lineHeight: 20 }}>{body}</Text>
     </Card>
   );
@@ -233,7 +375,11 @@ export function ToggleRow({
     <View style={styles.toggleRow}>
       <View style={{ flex: 1, paddingRight: 12 }}>
         <Text style={styles.menuLabel}>{label}</Text>
-        {hint ? <Text style={{ color: colors.muted, marginTop: 4, lineHeight: 18 }}>{hint}</Text> : null}
+        {hint ? (
+          <Text style={{ color: colors.muted, marginTop: 4, lineHeight: 18 }}>
+            {hint}
+          </Text>
+        ) : null}
       </View>
       <Switch
         value={value}
@@ -252,19 +398,19 @@ const styles = StyleSheet.create({
   fixedBody: { flex: 1 },
   padded: { paddingHorizontal: 20, paddingTop: 8 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  backText: { color: colors.tealDark, fontWeight: '600' },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  backBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
+  backText: { color: colors.tealDark, fontWeight: "600" },
+  headerTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
   card: {
     backgroundColor: colors.white,
     borderRadius: 20,
     padding: 16,
-    shadowColor: '#0E6A5C',
+    shadowColor: "#0E6A5C",
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -273,13 +419,13 @@ const styles = StyleSheet.create({
   primary: {
     borderRadius: 16,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
   },
-  primaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  ghost: { paddingVertical: 12, alignItems: 'center' },
-  ghostText: { color: colors.tealDark, fontWeight: '700' },
-  label: { color: colors.muted, fontSize: 15, fontWeight: '600' },
+  primaryText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  ghost: { paddingVertical: 12, alignItems: "center" },
+  ghostText: { color: colors.tealDark, fontWeight: "700" },
+  label: { color: colors.muted, fontSize: 15, fontWeight: "600" },
   input: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -294,28 +440,28 @@ const styles = StyleSheet.create({
   error: { color: colors.coral, fontSize: 14 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 18,
     marginBottom: 10,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  sectionAction: { color: colors.tealDark, fontWeight: '700', fontSize: 15 },
+  sectionTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  sectionAction: { color: colors.tealDark, fontWeight: "700", fontSize: 15 },
   menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 8,
   },
-  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  menuLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
+  menuLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  menuLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
   toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: 14,

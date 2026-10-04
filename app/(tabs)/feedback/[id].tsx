@@ -44,7 +44,7 @@ export default function Feedback() {
         <BackHeader title="Feedback" />
         <Card style={styles.sessionCard}>
           <View style={styles.counselorRow}>
-            <Avatar name={counselor.name} color={counselor.avatarColor} size={42} />
+            <Avatar name={counselor.name} color={counselor.avatarColor} size={42} profileType="counselor" />
             <View style={styles.counselorInfo}>
               <Text style={styles.counselorName}>{counselor.name}</Text>
               <Text style={styles.counselorSpecialty}>{counselor.specialties[0]}</Text>
