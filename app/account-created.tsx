@@ -7,17 +7,20 @@ import { colors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
 
 export default function AccountCreated() {
-  const { currentUser } = useApp();
+  const { ready, currentUser } = useApp();
 
   useEffect(() => {
-    const destination = !currentUser?.onboardingComplete
-      ? '/onboarding'
-      : !currentUser.consentAccepted
-        ? '/consent'
-        : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
+    if (!ready) return;
+    const destination = !currentUser
+      ? '/login'
+      : !currentUser.onboardingComplete
+        ? '/onboarding'
+        : !currentUser.consentAccepted
+          ? '/consent'
+          : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
     const timer = setTimeout(() => router.replace(destination), 3000);
     return () => clearTimeout(timer);
-  }, [currentUser]);
+  }, [ready, currentUser]);
 
   return (
     <Screen scroll={false} padded={false}>

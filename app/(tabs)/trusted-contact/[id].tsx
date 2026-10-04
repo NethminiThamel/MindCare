@@ -7,7 +7,7 @@ import { colors } from '../../../constants/theme';
 import { useApp } from '../../../context/AppContext';
 
 export default function EditTrustedContact() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, returnTo } = useLocalSearchParams<{ id: string; returnTo?: string }>();
   const { currentUser, state, updateContact, deleteContact } = useApp();
   const contact = state.contacts.find((item) => item.id === id && item.userId === currentUser?.id);
   const [name, setName] = useState(contact?.name ?? '');
@@ -89,7 +89,14 @@ export default function EditTrustedContact() {
                 onPress={() => {
                   deleteContact(contact.id);
                   setConfirmDeleteVisible(false);
-                  router.replace('/trusted-contacts');
+                  router.replace({
+                    pathname: '/trusted-contacts',
+                    params: {
+                      returnTo: returnTo === '/(tabs)/profile' || returnTo === '/(tabs)/sos'
+                        ? returnTo
+                        : '/(tabs)',
+                    },
+                  });
                 }}
                 style={styles.confirmDeleteButton}
                 accessibilityRole="button"

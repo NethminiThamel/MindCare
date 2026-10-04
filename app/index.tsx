@@ -15,7 +15,7 @@ import { useApp } from '../context/AppContext';
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
 
 export default function Splash() {
-  const { ready, currentUser, state } = useApp();
+  const { ready, introReady, currentUser, state } = useApp();
   const [progressAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -40,23 +40,25 @@ export default function Splash() {
   }, [progressAnim]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !introReady) return;
 
     const timer = setTimeout(() => {
-      const route = !state.introCompleted || (currentUser && !currentUser.onboardingComplete)
-        ? '/onboarding'
-        : currentUser
-          ? currentUser.consentAccepted
+      const route = currentUser
+        ? !currentUser.onboardingComplete
+          ? '/onboarding'
+          : currentUser.consentAccepted
             ? currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
             : '/consent'
-          : '/login';
+        : state.introCompleted
+          ? '/login'
+          : '/onboarding';
       router.replace(route);
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [ready, currentUser, state.introCompleted]);
+  }, [ready, introReady, currentUser, state.introCompleted]);
 
-  if (!ready) {
+  if (!ready || !introReady) {
     return <View style={styles.splash} />;
   }
 

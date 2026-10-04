@@ -5,10 +5,10 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar, Screen } from '../../../components/ui';
 import { colors } from '../../../constants/theme';
 import { useApp } from '../../../context/AppContext';
+import { getAvailabilityTimes } from '../../../lib/availability';
 import { formatDate, formatTime } from '../../../lib/format';
 import type { AppointmentType } from '../../../types';
 
-const times = ['09:00', '10:30', '14:00', '16:30'];
 const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const sessionTypes: { key: AppointmentType; label: string }[] = [
   { key: 'video', label: 'Video Call' },
@@ -18,11 +18,12 @@ const sessionTypes: { key: AppointmentType; label: string }[] = [
 
 export default function RescheduleSession() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { currentUser, state, updateAppointment } = useApp();
+  const { currentUser, ready, state, updateAppointment } = useApp();
   const appointment = state.appointments.find((item) => item.id === id);
   const counselor = appointment
     ? state.counselors.find((item) => item.id === appointment.counselorId)
     : undefined;
+  const availability = state.availabilities?.find((item) => item.counselorId === appointment?.counselorId);
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const today = new Date();
@@ -32,14 +33,23 @@ export default function RescheduleSession() {
   const initialDateValue = new Date(`${initialDate}T12:00:00`);
   const [month, setMonth] = useState(() => new Date(initialDateValue.getFullYear(), initialDateValue.getMonth(), 1));
   const [date, setDate] = useState(initialDate);
-  const [time, setTime] = useState(() => times.includes(appointment?.time ?? '') ? appointment?.time ?? '10:30' : '10:30');
+  const [selectedTime, setSelectedTime] = useState('');
   const [type, setType] = useState<AppointmentType>(appointment?.type ?? 'video');
+  const deliveryMethods = availability?.deliveryMethods ?? [];
+  const selectedType = deliveryMethods.includes(type) ? type : deliveryMethods[0];
+  const times = getAvailabilityTimes(availability, date, appointment?.durationMin ?? 0)
+    .filter((slot) => date !== appointment?.date || slot !== appointment?.time);
+  const time = times.includes(selectedTime) ? selectedTime : times[0] ?? '';
   const [reason, setReason] = useState('');
   const calendarDays = buildCalendarDays(month);
   const calendarWeeks = Array.from({ length: calendarDays.length / 7 }, (_, index) =>
     calendarDays.slice(index * 7, index * 7 + 7)
   );
   const previousMonthDisabled = month.getFullYear() === today.getFullYear() && month.getMonth() <= today.getMonth();
+
+  if (!ready) {
+    return <Screen><Text style={styles.notFound}>Loading counselor availability...</Text></Screen>;
+  }
 
   if (!appointment || !counselor) {
     return <Screen><Text style={styles.notFound}>Appointment not found.</Text></Screen>;
@@ -90,17 +100,21 @@ export default function RescheduleSession() {
               {week.map((day) => {
                 const dayKey = toDateKey(day);
                 const selected = date === dayKey;
-                const disabled = dayKey < todayKey;
+                const disabled = dayKey < todayKey
+                  || !getAvailabilityTimes(availability, dayKey, appointment.durationMin).some(
+                    (slot) => dayKey !== appointment.date || slot !== appointment.time
+                  );
                 const inMonth = day.getMonth() === month.getMonth();
                 return (
                   <Pressable
                     key={dayKey}
                     onPress={() => {
                       setDate(dayKey);
+                      setSelectedTime('');
                       if (!inMonth) setMonth(new Date(day.getFullYear(), day.getMonth(), 1));
                     }}
                     disabled={disabled}
-                    style={[styles.calendarCell, selected && styles.calendarCellSelected]}
+                    style={[styles.calendarCell, selected && styles.calendarCellSelected, disabled && styles.unavailableCell]}
                     accessibilityRole="button"
                     accessibilityLabel={day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     accessibilityState={{ selected, disabled }}
@@ -123,7 +137,7 @@ export default function RescheduleSession() {
             return (
               <Pressable
                 key={slot}
-                onPress={() => setTime(slot)}
+                onPress={() => setSelectedTime(slot)}
                 style={[styles.timeChip, selected && styles.selectedChip]}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -133,12 +147,15 @@ export default function RescheduleSession() {
               </Pressable>
             );
           })}
+          {!times.length ? (
+            <Text style={styles.unavailableText}>No bookable times are published for this date.</Text>
+          ) : null}
         </View>
 
         <Text style={[styles.sectionLabel, styles.sessionTypeHeading]}>SESSION TYPE</Text>
         <View style={styles.formatRow}>
-          {sessionTypes.map((option) => {
-            const selected = type === option.key;
+          {sessionTypes.filter((option) => deliveryMethods.includes(option.key)).map((option) => {
+            const selected = selectedType === option.key;
             return (
               <Pressable
                 key={option.key}
@@ -168,10 +185,15 @@ export default function RescheduleSession() {
             const notes = reason.trim()
               ? `${appointment.notes}${appointment.notes ? '\n' : ''}Reschedule: ${reason.trim()}`
               : appointment.notes;
-            updateAppointment(appointment.id, { date, time, type, notes, status: 'upcoming' });
+            updateAppointment(appointment.id, { date, time, type, notes, status: 'pending' });
             router.replace({ pathname: '/done', params: { flow: 'reschedule', appointmentId: appointment.id } });
           }}
-          style={({ pressed }) => [styles.confirmButton, pressed && styles.pressed]}
+          disabled={!time || !selectedType}
+          style={({ pressed }) => [
+            styles.confirmButton,
+            (!time || !selectedType) && styles.disabledButton,
+            pressed && styles.pressed,
+          ]}
           accessibilityRole="button"
         >
           <Text style={styles.confirmText}>Confirm Reschedule</Text>
@@ -210,6 +232,7 @@ const styles = StyleSheet.create({
   calendarWeek: { flexDirection: 'row' },
   calendarCell: { flex: 1, aspectRatio: 1.55, minHeight: 21, maxHeight: 25, alignItems: 'center', justifyContent: 'center', margin: 1, borderWidth: 1, borderColor: '#D8E3DF', borderRadius: 7, backgroundColor: colors.white },
   calendarCellSelected: { borderColor: '#55A889', backgroundColor: '#E3F2EB' },
+  unavailableCell: { opacity: 0.35 },
   calendarDay: { color: '#586C66', fontSize: 11 },
   outsideMonth: { color: '#A7B4B0' },
   disabledDay: { color: '#CCD5D2' },
@@ -218,6 +241,7 @@ const styles = StyleSheet.create({
   sectionLabel: { color: '#687C76', fontSize: 12, fontWeight: '600' },
   selectedDate: { color: colors.muted, fontSize: 11 },
   timeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  unavailableText: { color: '#657873', fontSize: 12, paddingVertical: 5 },
   timeChip: { minHeight: 27, justifyContent: 'center', paddingHorizontal: 9, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.white },
   selectedChip: { borderColor: '#72B7A5', backgroundColor: '#E7F4F0' },
   timeText: { color: '#657873', fontSize: 12 },
@@ -228,6 +252,7 @@ const styles = StyleSheet.create({
   reasonLabel: { marginTop: 12, marginBottom: 5, color: '#344A45', fontSize: 12 },
   reasonInput: { minHeight: 34, paddingHorizontal: 9, borderWidth: 1, borderColor: '#AFC2BC', borderRadius: 9, backgroundColor: colors.white, color: colors.text, fontSize: 12 },
   confirmButton: { minHeight: 40, alignItems: 'center', justifyContent: 'center', marginTop: 9, borderRadius: 22, backgroundColor: '#5BA48F', elevation: 3 },
+  disabledButton: { opacity: 0.5 },
   confirmText: { color: colors.white, fontSize: 12, fontWeight: '600' },
   pressed: { opacity: 0.8 },
   notFound: { color: colors.text, fontSize: 14 },

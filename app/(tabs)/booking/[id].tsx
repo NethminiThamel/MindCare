@@ -5,10 +5,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar, Screen } from '../../../components/ui';
 import { colors } from '../../../constants/theme';
 import { useApp } from '../../../context/AppContext';
+import { getAvailabilityTimes } from '../../../lib/availability';
 import { formatTime } from '../../../lib/format';
 import type { AppointmentType } from '../../../types';
 
-const times = ['09:00', '10:30', '14:00', '16:30'];
 const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const sessionTypes: { key: AppointmentType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'video', label: 'Video Call', icon: 'videocam-outline' },
@@ -18,8 +18,9 @@ const sessionTypes: { key: AppointmentType; label: string; icon: keyof typeof Io
 
 export default function Booking() {
   const { id, time: timeParam } = useLocalSearchParams<{ id: string; time?: string }>();
-  const { currentUser, state, bookAppointment } = useApp();
+  const { currentUser, ready, state, bookAppointment } = useApp();
   const counselor = state.counselors.find((item) => item.id === id);
+  const availability = state.availabilities?.find((item) => item.counselorId === id);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [month, setMonth] = useState(() => {
@@ -31,8 +32,16 @@ export default function Booking() {
     nextDay.setDate(nextDay.getDate() + 1);
     return toDateKey(nextDay);
   });
-  const time = times.includes(timeParam ?? '') ? timeParam ?? '10:30' : '10:30';
+  const [selectedTime, setSelectedTime] = useState(timeParam ?? '');
   const [type, setType] = useState<AppointmentType>('video');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const activeFormat = availability?.sessionFormats?.find((format) => format.enabled)?.key;
+  const durationMin = activeFormat === 'urgent' ? 15 : activeFormat === 'quick' ? 30 : activeFormat === 'standard' ? 50 : 0;
+  const deliveryMethods = availability?.deliveryMethods ?? [];
+  const selectedType = deliveryMethods.includes(type) ? type : deliveryMethods[0];
+  const times = getAvailabilityTimes(availability, date, durationMin);
+  const time = times.includes(selectedTime) ? selectedTime : times[0] ?? '';
   const calendarDays = buildCalendarDays(month);
   const calendarWeeks = Array.from({ length: calendarDays.length / 7 }, (_, index) =>
     calendarDays.slice(index * 7, index * 7 + 7)
@@ -40,6 +49,14 @@ export default function Booking() {
   const todayKey = toDateKey(today);
   const selectedDay = new Date(`${date}T12:00:00`);
   const previousMonthDisabled = month.getFullYear() === today.getFullYear() && month.getMonth() <= today.getMonth();
+
+  if (!ready) {
+    return (
+      <Screen>
+        <Text style={styles.notFound}>Loading counselor availability...</Text>
+      </Screen>
+    );
+  }
 
   if (!counselor) {
     return (
@@ -111,13 +128,21 @@ export default function Booking() {
                     key={dayKey}
                     onPress={() => {
                       setDate(dayKey);
+                      setSelectedTime('');
                       if (!inMonth) setMonth(new Date(day.getFullYear(), day.getMonth(), 1));
                     }}
-                    disabled={disabled}
-                    style={[styles.calendarCell, selected && styles.calendarCellSelected]}
+                    disabled={disabled || getAvailabilityTimes(availability, dayKey, durationMin).length === 0}
+                    style={[
+                      styles.calendarCell,
+                      selected && styles.calendarCellSelected,
+                      (disabled || getAvailabilityTimes(availability, dayKey, durationMin).length === 0) && styles.unavailableCell,
+                    ]}
                     accessibilityRole="button"
                     accessibilityLabel={day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                    accessibilityState={{ selected, disabled }}
+                    accessibilityState={{
+                      selected,
+                      disabled: disabled || getAvailabilityTimes(availability, dayKey, durationMin).length === 0,
+                    }}
                   >
                     <Text style={[styles.calendarDay, !inMonth && styles.outsideMonth, disabled && styles.disabledDay, selected && styles.selectedText]}>
                       {day.getDate()}
@@ -140,7 +165,7 @@ export default function Booking() {
             return (
               <Pressable
                 key={slot}
-                onPress={() => router.setParams({ time: slot })}
+                onPress={() => setSelectedTime(slot)}
                 style={[styles.timeChip, selected && styles.selectedChip]}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -150,12 +175,19 @@ export default function Booking() {
               </Pressable>
             );
           })}
+          {!times.length ? (
+            <Text style={styles.unavailableText}>
+              {availability?.isAcceptingSessions
+                ? 'No bookable times are published for this date.'
+                : 'This counselor has not published availability in Firebase.'}
+            </Text>
+          ) : null}
         </View>
 
         <Text style={[styles.sectionLabel, styles.sessionTypeHeading]}>SESSION TYPE</Text>
         <View style={styles.formatRow}>
-          {sessionTypes.map((option) => {
-            const selected = type === option.key;
+          {sessionTypes.filter((option) => deliveryMethods.includes(option.key)).map((option) => {
+            const selected = selectedType === option.key;
             return (
               <Pressable
                 key={option.key}
@@ -170,20 +202,42 @@ export default function Booking() {
           })}
         </View>
 
+        {bookingError ? <Text style={styles.bookingError}>{bookingError}</Text> : null}
+
         <Pressable
           onPress={() => {
-            const appointment = bookAppointment({ counselorId: counselor.id, date, time, type, notes: '' });
-            router.replace({
-              pathname: '/done',
-              params: {
-                appointmentId: appointment.id,
-              },
-            });
+            if (!time || !selectedType || isSubmitting) return;
+            setIsSubmitting(true);
+            setBookingError(null);
+            void bookAppointment({
+              counselorId: counselor.id,
+              date,
+              time,
+              type: selectedType,
+              durationMin,
+              notes: '',
+            }).then((appointment) => {
+              router.replace({
+                pathname: '/done',
+                params: { appointmentId: appointment.id },
+              });
+            }).catch((error: unknown) => {
+              setBookingError(
+                error instanceof Error
+                  ? `Your appointment could not be saved to Firebase: ${error.message}`
+                  : 'Your appointment could not be saved to Firebase. Please try again.'
+              );
+            }).finally(() => setIsSubmitting(false));
           }}
-          style={({ pressed }) => [styles.bookButton, pressed && styles.pressed]}
+          disabled={!time || !selectedType || durationMin === 0 || isSubmitting}
+          style={({ pressed }) => [
+            styles.bookButton,
+            (!time || !selectedType || durationMin === 0 || isSubmitting) && styles.disabledButton,
+            pressed && styles.pressed,
+          ]}
           accessibilityRole="button"
         >
-          <Text style={styles.bookText}>Confirm Booking</Text>
+          <Text style={styles.bookText}>{isSubmitting ? 'Saving to Firebase...' : 'Confirm Booking'}</Text>
         </Pressable>
       </View>
     </Screen>
@@ -221,6 +275,7 @@ const styles = StyleSheet.create({
   calendarWeek: { flexDirection: 'row' },
   calendarCell: { flex: 1, aspectRatio: 1.55, minHeight: 21, maxHeight: 25, alignItems: 'center', justifyContent: 'center', margin: 1, borderWidth: 1, borderColor: '#D8E3DF', borderRadius: 7, backgroundColor: colors.white },
   calendarCellSelected: { borderColor: '#55A889', backgroundColor: '#E3F2EB' },
+  unavailableCell: { opacity: 0.35 },
   calendarDay: { color: '#586C66', fontSize: 11 },
   outsideMonth: { color: '#A7B4B0' },
   disabledDay: { color: '#CCD5D2' },
@@ -228,6 +283,7 @@ const styles = StyleSheet.create({
   sectionLabel: { color: '#687C76', fontSize: 12, fontWeight: '600' },
   selectedDate: { color: colors.muted, fontSize: 12 },
   timeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  unavailableText: { color: colors.muted, fontSize: 12, paddingVertical: 5 },
   timeChip: { minHeight: 27, justifyContent: 'center', paddingHorizontal: 9, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.white },
   timeText: { color: '#657873', fontSize: 12 },
   selectedChip: { borderColor: '#72B7A5', backgroundColor: '#E7F4F0' },
@@ -236,7 +292,9 @@ const styles = StyleSheet.create({
   formatRow: { flexDirection: 'row', gap: 5 },
   formatChip: { flex: 1, minHeight: 29, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 1, borderColor: colors.line, borderRadius: 9, backgroundColor: colors.white },
   formatText: { color: '#657873', fontSize: 11 },
+  bookingError: { color: '#B42318', fontSize: 12, marginTop: 8 },
   bookButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', marginTop: 12, borderRadius: 24, backgroundColor: '#5BA48F', elevation: 3 },
+  disabledButton: { opacity: 0.5 },
   bookText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   pressed: { opacity: 0.8 },
   notFound: { color: colors.text, fontSize: 14 },

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Avatar, Screen } from '../../components/ui';
@@ -12,8 +12,9 @@ type CounselorFilter = (typeof filters)[number];
 
 export default function Support() {
   const { currentUser, state } = useApp();
+  const { q } = useLocalSearchParams<{ q?: string }>();
   const [filter, setFilter] = useState<CounselorFilter>('All');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(q ?? '');
   const counselors = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return state.counselors.filter((counselor) => {

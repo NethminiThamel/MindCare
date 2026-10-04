@@ -1,0 +1,364 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function validProfile() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'role',
+          'isAnonymous',
+          'year',
+          'major',
+          'phone',
+          'bio',
+          'title',
+          'specialties',
+          'avatarColor',
+          'onboardingComplete',
+          'consentAccepted',
+          'hideFromDirectory'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.role is string
+        && request.resource.data.avatarColor is string
+        && request.resource.data.onboardingComplete is bool
+        && request.resource.data.consentAccepted is bool;
+    }
+
+    function hasAssignment(studentId, counselorId) {
+      let assignmentPath = /databases/$(database)/documents/counselorAssignments/$(studentId + '_' + counselorId);
+      return exists(assignmentPath)
+        && get(assignmentPath).data.studentId == studentId
+        && get(assignmentPath).data.counselorId == counselorId
+        && exists(/databases/$(database)/documents/appointments/$(get(assignmentPath).data.appointmentId))
+        && get(/databases/$(database)/documents/appointments/$(get(assignmentPath).data.appointmentId)).data.status != 'cancelled';
+    }
+
+    function sharesMoods(studentId, counselorId) {
+      return hasAssignment(studentId, counselorId)
+        && get(/databases/$(database)/documents/accounts/$(studentId)/private/settings).data.shareMoodWithCounselor == true;
+    }
+
+    function validAppointment() {
+      return request.resource.data.keys().hasOnly([
+          'userId',
+          'counselorId',
+          'date',
+          'time',
+          'durationMin',
+          'type',
+          'status',
+          'notes',
+          'isAnonymous'
+        ])
+        && request.resource.data.userId is string
+        && request.resource.data.counselorId is string
+        && request.resource.data.date is string
+        && request.resource.data.time is string
+        && request.resource.data.type in ['video', 'chat', 'in-person']
+        && request.resource.data.status in ['pending', 'upcoming', 'completed', 'cancelled']
+        && request.resource.data.notes is string
+        && exists(/databases/$(database)/documents/counselors/$(request.resource.data.counselorId));
+    }
+
+    function validMessage() {
+      return request.resource.data.keys().hasOnly([
+          'userId',
+          'counselorId',
+          'sender',
+          'text',
+          'createdAt'
+        ])
+        && request.resource.data.userId is string
+        && request.resource.data.counselorId is string
+        && request.resource.data.sender in ['student', 'counselor']
+        && request.resource.data.text is string
+        && request.resource.data.createdAt is string;
+    }
+
+    function isAppointmentParticipant(appointmentId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/appointments/$(appointmentId))
+        && (
+          get(/databases/$(database)/documents/appointments/$(appointmentId)).data.userId == request.auth.uid
+          || (
+            isStaff()
+            && get(/databases/$(database)/documents/appointments/$(appointmentId)).data.counselorId == request.auth.uid
+            && hasAssignment(
+              get(/databases/$(database)/documents/appointments/$(appointmentId)).data.userId,
+              request.auth.uid
+            )
+          )
+        );
+    }
+
+    match /profiles/{uid} {
+      allow get: if owns(uid);
+      allow list: if false;
+      allow create: if owns(uid) && validProfile() && request.resource.data.role == 'student';
+      allow update: if owns(uid)
+        && validProfile()
+        && request.resource.data.role == resource.data.role;
+      allow delete: if owns(uid);
+    }
+
+    match /staff/{uid} {
+      allow get: if owns(uid);
+      allow list, create, update, delete: if false;
+    }
+
+    match /counselors/{uid} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isStaff();
+
+      match /notifications/{notificationId} {
+        allow read, write: if owns(uid) && isStaff();
+      }
+    }
+
+    match /crisisResources/{resourceId} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isStaff();
+    }
+
+    match /studentDirectory/{uid} {
+      allow get: if owns(uid) || isStaff();
+      allow list: if isStaff();
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasOnly([
+          'name',
+          'isAnonymous',
+          'year',
+          'major',
+          'avatarColor'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.avatarColor is string;
+      allow delete: if owns(uid);
+    }
+
+    match /sharedProfiles/{uid} {
+      allow get: if owns(uid)
+        || (isStaff() && hasAssignment(uid, request.auth.uid));
+      allow list: if false;
+      allow create, update: if owns(uid)
+        && request.resource.data.keys().hasOnly([
+          'name',
+          'isAnonymous',
+          'year',
+          'major',
+          'avatarColor',
+          'email',
+          'phone',
+          'bio'
+        ])
+        && request.resource.data.name is string;
+      allow delete: if owns(uid);
+    }
+
+    match /accounts/{uid}/moods/{moodId} {
+      allow read, write: if owns(uid);
+    }
+
+    match /accounts/{uid}/contacts/{contactId} {
+      allow read, write: if owns(uid);
+    }
+
+    match /accounts/{uid}/private/{privateId} {
+      allow read, write: if owns(uid)
+        && privateId in ['crisisPlan', 'settings'];
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || (isStaff() && resource.data.counselorId == request.auth.uid)
+        );
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && validAppointment();
+      allow update: if signedIn()
+        && validAppointment()
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.counselorId == resource.data.counselorId
+        && (
+          (
+            resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'date',
+              'time',
+              'type',
+              'notes',
+              'isAnonymous',
+              'status'
+            ])
+            && request.resource.data.status in ['pending', 'cancelled']
+          )
+          || (
+            isStaff()
+            && resource.data.counselorId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && request.resource.data.status in ['upcoming', 'completed', 'cancelled']
+          )
+          || (
+            isStaff()
+            && resource.data.counselorId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['date', 'time'])
+            && request.resource.data.status == resource.data.status
+          )
+        );
+      allow delete: if owns(resource.data.userId)
+        || (isStaff() && resource.data.counselorId == request.auth.uid);
+    }
+
+    match /counselorAssignments/{assignmentId} {
+      function assignmentAppointmentExists() {
+        return exists(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId))
+          && get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.userId == request.resource.data.studentId
+          && get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.counselorId == request.resource.data.counselorId
+          && get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.status != 'cancelled';
+      }
+
+      allow get, list: if signedIn()
+        && (
+          resource.data.studentId == request.auth.uid
+          || (isStaff() && resource.data.counselorId == request.auth.uid)
+        );
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['studentId', 'counselorId', 'appointmentId'])
+        && request.resource.data.studentId is string
+        && request.resource.data.counselorId is string
+        && (
+          owns(request.resource.data.studentId)
+          || (isStaff() && request.resource.data.counselorId == request.auth.uid)
+        )
+        && assignmentAppointmentExists();
+      allow delete: if owns(resource.data.studentId)
+        || (isStaff() && resource.data.counselorId == request.auth.uid);
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || (isStaff() && resource.data.counselorId == request.auth.uid)
+        );
+      allow create: if signedIn()
+        && validMessage()
+        && (
+          (
+            request.resource.data.userId == request.auth.uid
+            && request.resource.data.sender == 'student'
+            && hasAssignment(request.auth.uid, request.resource.data.counselorId)
+          )
+          || (
+            isStaff()
+            && request.resource.data.counselorId == request.auth.uid
+            && request.resource.data.sender == 'counselor'
+            && hasAssignment(request.resource.data.userId, request.auth.uid)
+          )
+        );
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])
+        && (
+          resource.data.userId == request.auth.uid
+          || (
+            isStaff()
+            && resource.data.counselorId == request.auth.uid
+            && hasAssignment(resource.data.userId, request.auth.uid)
+          )
+        );
+      allow delete: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || (
+            isStaff()
+            && resource.data.counselorId == request.auth.uid
+            && hasAssignment(resource.data.userId, request.auth.uid)
+          )
+        );
+    }
+
+    match /feedback/{feedbackId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || (isStaff() && resource.data.counselorId == request.auth.uid)
+        );
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'appointmentId',
+          'userId',
+          'counselorId',
+          'rating',
+          'comment',
+          'hideNameFromCounselor',
+          'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && isAppointmentParticipant(request.resource.data.appointmentId)
+        && get(/databases/$(database)/documents/appointments/$(request.resource.data.appointmentId)).data.counselorId == request.resource.data.counselorId
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string;
+      allow update, delete: if owns(resource.data.userId);
+    }
+
+    match /moodSharing/{shareId} {
+      allow read: if signedIn()
+        && (
+          resource.data.studentId == request.auth.uid
+          || (isStaff() && resource.data.counselorId == request.auth.uid)
+        );
+      allow create, update: if owns(request.resource.data.studentId)
+        && request.resource.data.keys().hasOnly(['studentId', 'counselorId'])
+        && request.resource.data.counselorId is string
+        && shareId == request.resource.data.studentId + '_' + request.resource.data.counselorId
+        && sharesMoods(request.resource.data.studentId, request.resource.data.counselorId);
+      allow delete: if owns(resource.data.studentId);
+    }
+
+    match /sharedMoods/{sharedMoodId} {
+      allow read: if signedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || (
+            isStaff()
+            && resource.data.counselorId == request.auth.uid
+            && sharesMoods(resource.data.userId, request.auth.uid)
+          )
+        );
+      allow create, update: if owns(request.resource.data.userId)
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'counselorId',
+          'mood',
+          'stressLevel',
+          'note',
+          'createdAt'
+        ])
+        && sharesMoods(request.resource.data.userId, request.resource.data.counselorId);
+      allow delete: if owns(resource.data.userId);
+    }
+
+    match /counselorAvailability/{uid} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if owns(uid) && isStaff();
+    }
+  }
+}

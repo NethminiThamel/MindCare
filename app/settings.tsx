@@ -10,6 +10,8 @@ export default function Settings() {
   const { currentUser, state, updateProfile, updateSettings } = useApp();
   const [name, setName] = useState(currentUser?.name ?? '');
   const [phone, setPhone] = useState(currentUser?.phone ?? '');
+  const [year, setYear] = useState(currentUser?.year ?? '');
+  const [major, setMajor] = useState(currentUser?.major ?? '');
   const savedSettings = state.settings.find((setting) => setting.userId === currentUser?.id);
   const [shareEmergencyStatus, setShareEmergencyStatus] = useState(savedSettings?.shareEmergencyStatus ?? false);
   const [error, setError] = useState('');
@@ -25,7 +27,12 @@ export default function Settings() {
 
     setError('');
     try {
-      await updateProfile({ name: normalizedName, phone: phone.trim() });
+      await updateProfile({
+        name: normalizedName,
+        phone: phone.trim() || undefined,
+        year: year.trim() || undefined,
+        major: major.trim() || undefined,
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save your profile.');
       return;
@@ -53,6 +60,18 @@ export default function Settings() {
           onChangeText={setPhone}
           placeholder="Phone number"
           keyboardType="phone-pad"
+        />
+        <ProfileField
+          label="ACADEMIC YEAR (OPTIONAL)"
+          value={year}
+          onChangeText={setYear}
+          placeholder="Leave blank if you prefer"
+        />
+        <ProfileField
+          label="MAJOR (OPTIONAL)"
+          value={major}
+          onChangeText={setMajor}
+          placeholder="Leave blank if you prefer"
         />
         <ProfileField
           label="ACCOUNT EMAIL"

@@ -29,7 +29,12 @@ export default function Login() {
       return;
     }
 
-    router.replace(result.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)');
+    const destination = !result.onboardingComplete
+      ? '/onboarding'
+      : !result.consentAccepted
+        ? '/consent'
+        : result.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
+    router.replace(destination);
   };
 
   return (

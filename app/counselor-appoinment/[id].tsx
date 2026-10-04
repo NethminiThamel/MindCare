@@ -92,8 +92,8 @@ export default function CounselorAppointmentDetails() {
           <Text style={styles.studentName}>{displayName}</Text>
           {student && !isAnonymous && (
             <>
-              <Text style={styles.studentMeta}>Academic Year: {student.year}</Text>
-              <Text style={styles.studentMeta}>Major: {student.major}</Text>
+              {student.year ? <Text style={styles.studentMeta}>Academic Year: {student.year}</Text> : null}
+              {student.major ? <Text style={styles.studentMeta}>Major: {student.major}</Text> : null}
               <Text style={styles.studentMeta}>Email: {student.email}</Text>
               <Text style={styles.studentMeta}>Phone: {student.phone ?? 'N/A'}</Text>
             </>

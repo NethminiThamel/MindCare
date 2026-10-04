@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Avatar, BackHeader, Card, Screen } from '../../components/ui';
@@ -8,20 +8,25 @@ import { useApp } from '../../context/AppContext';
 
 export default function TrustedContacts() {
   const { ready } = useApp();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const destination = returnTo === '/(tabs)/profile' || returnTo === '/(tabs)/sos'
+    ? returnTo
+    : '/(tabs)';
+  const goBack = () => router.replace(destination);
 
   if (!ready) {
     return (
       <Screen>
-        <BackHeader title="Safety Settings" />
+        <BackHeader title="Safety Settings" onBack={goBack} />
         <Text style={styles.description}>Loading your safety settings...</Text>
       </Screen>
     );
   }
 
-  return <TrustedContactsContent />;
+  return <TrustedContactsContent returnTo={destination} onBack={goBack} />;
 }
 
-function TrustedContactsContent() {
+function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack: () => void }) {
   const { currentUser, state, addContact, deleteContact, updateSettings } = useApp();
   const contacts = state.contacts.filter((contact) => contact.userId === currentUser?.id);
   const settings = state.settings.find((item) => item.userId === currentUser?.id);
@@ -54,13 +59,16 @@ function TrustedContactsContent() {
       email: email.trim() || undefined,
       shareEmergencyStatus,
     });
-    router.replace({ pathname: '/done', params: { flow: 'trusted-contact', contactId: contact.id } });
+    router.replace({
+      pathname: '/done',
+      params: { flow: 'trusted-contact', contactId: contact.id, returnTo },
+    });
   };
 
   return (
     <Screen scroll={false}>
       <View style={styles.page}>
-        <BackHeader title="Safety Settings" />
+        <BackHeader title="Safety Settings" onBack={onBack} />
         <Text style={styles.description}>Configure crisis protocols and trusted support.</Text>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -80,7 +88,10 @@ function TrustedContactsContent() {
             {contacts.length ? contacts.map((contact) => (
               <Pressable
                 key={contact.id}
-                onPress={() => router.push(`/trusted-contact/${contact.id}`)}
+                onPress={() => router.push({
+                  pathname: '/trusted-contact/[id]',
+                  params: { id: contact.id, returnTo },
+                })}
                 style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
                 accessibilityRole="button"
                 accessibilityLabel={`Edit ${contact.name}`}
@@ -137,7 +148,7 @@ function TrustedContactsContent() {
               last
             />
             <Text style={styles.disclaimer}>
-              These preferences are saved on this device. Location is not collected unless a crisis-support flow is available and you choose to use it.
+              These preferences are saved to your Firebase account. Location is not collected unless a crisis-support flow is available and you choose to use it.
             </Text>
           </Card>
 

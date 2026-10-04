@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, authErrorMessage, getOrCreateProfile, profileFromFirebase, saveProfile } from '../firebase';
 import {
   emptyAppState,
@@ -40,11 +41,17 @@ const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 type AppContextValue = {
   ready: boolean;
+  introReady: boolean;
   authStartupError: string | null;
   syncError: string | null;
   state: AppState;
   currentUser: User | null;
-  login: (email: string, password: string) => Promise<{ error: string | null; role: User['role'] | null }>;
+  login: (email: string, password: string) => Promise<{
+    error: string | null;
+    role: User['role'] | null;
+    onboardingComplete: boolean;
+    consentAccepted: boolean;
+  }>;
   resetPassword: (email: string) => Promise<string | null>;
   signup: (input: { name: string; email: string; password: string; phone?: string }) => Promise<string | null>;
   signupAnonymously: () => Promise<void>;
@@ -61,9 +68,10 @@ type AppContextValue = {
     date: string;
     time: string;
     type: AppointmentType;
+    durationMin: number;
     notes: string;
     isAnonymous?: boolean;
-  }) => Appointment;
+  }) => Promise<Appointment>;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
   setAppointmentStatus: (id: string, status: AppointmentStatus) => void;
   respondToAppointmentRequest: (id: string, status: 'upcoming' | 'cancelled') => void;
@@ -82,11 +90,13 @@ type AppContextValue = {
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
+const INTRO_COMPLETED_KEY = 'mindcare:intro-completed:v1';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(emptyAppState());
   const stateRef = useRef(state);
   const [ready, setReady] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
   const [authStartupError, setAuthStartupError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -96,20 +106,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState(next);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(INTRO_COMPLETED_KEY).then(
+      (value) => {
+        if (active) {
+          replaceState((prev) => ({ ...prev, introCompleted: value === 'true' }));
+        }
+      },
+      (error: unknown) => {
+        console.error('Unable to read the onboarding completion marker.', error);
+        if (active) {
+          setAuthStartupError('Could not restore the onboarding status from this device.');
+        }
+      }
+    ).finally(() => {
+      if (active) setIntroReady(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [replaceState]);
+
   const persist = useCallback((updater: (prev: AppState) => AppState) => {
     const before = stateRef.current;
     const after = updater(before);
     stateRef.current = after;
     setState(after);
     const actor = before.users.find((user) => user.id === before.currentUserId);
-    if (!actor || auth.currentUser?.uid !== actor.id) return;
-    void syncAppStateChanges(before, after, actor).then(
+    if (!actor || auth.currentUser?.uid !== actor.id) return Promise.resolve();
+    const sync = syncAppStateChanges(before, after, actor);
+    void sync.then(
       () => setSyncError(null),
       (error: unknown) => {
         console.error('Unable to sync MindCare data with Firestore.', error);
         setSyncError(error instanceof Error ? error.message : 'Unable to sync data with Firestore.');
       }
     );
+    return sync;
   }, []);
 
   useEffect(() => {
@@ -120,9 +155,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       auth,
       async (firebaseUser) => {
         const currentGeneration = ++generation;
+        setReady(false);
         stopData?.();
         stopData = undefined;
-        replaceState(() => emptyAppState());
+        replaceState((prev) => ({ ...emptyAppState(), introCompleted: prev.introCompleted }));
         setSyncError(null);
         setAuthStartupError(null);
         if (!firebaseUser) {
@@ -130,7 +166,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        setReady(false);
         try {
           const profile = await getOrCreateProfile(firebaseUser);
           if (!active || currentGeneration !== generation) return;
@@ -143,11 +178,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           } catch (migrationError) {
             console.error('Unable to migrate this account\'s saved data to Firestore.', migrationError);
             setSyncError(
-              'Some data saved on this device could not be moved to your Firebase account.'
+              'Saved account data could not be transferred to Firebase.'
             );
           }
           if (!active || currentGeneration !== generation) return;
-          replaceState(() => ({ ...emptyAppState(), users: [profile], currentUserId: profile.id }));
+          replaceState((prev) => ({
+            ...emptyAppState(),
+            introCompleted: prev.introCompleted,
+            users: [profile],
+            currentUserId: profile.id,
+          }));
           stopData = subscribeAppData(
             firebaseUser,
             profile,
@@ -216,6 +256,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppContextValue>(() => {
     return {
       ready,
+      introReady,
       authStartupError,
       syncError,
       state,
@@ -230,7 +271,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           );
           authenticated = true;
           const profile = await syncUserProfile(credential.user);
-          return { error: null, role: profile.role };
+          return {
+            error: null,
+            role: profile.role,
+            onboardingComplete: profile.onboardingComplete,
+            consentAccepted: profile.consentAccepted,
+          };
         } catch (error) {
           const message = authErrorMessage(error);
           return {
@@ -238,6 +284,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               ? `Firebase signed you in, but MindCare could not load your cloud profile. ${message}`
               : message,
             role: null,
+            onboardingComplete: false,
+            consentAccepted: false,
           };
         }
       },
@@ -271,8 +319,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             role: 'student',
             phone: phone?.trim() || undefined,
             avatarColor: '#F07178',
-            onboardingComplete: false,
             consentAccepted: false,
+            onboardingComplete: stateRef.current.introCompleted === true,
           });
           await syncProfileVisibility(profile);
           replaceState((prev) => ({
@@ -296,8 +344,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             role: 'student',
             isAnonymous: true,
             avatarColor: '#F07178',
-            onboardingComplete: false,
             consentAccepted: false,
+            onboardingComplete: stateRef.current.introCompleted === true,
           });
           await syncProfileVisibility(profile);
           replaceState((prev) => ({
@@ -313,6 +361,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await signOut(auth);
       },
       completeOnboarding: async () => {
+        await AsyncStorage.setItem(INTRO_COMPLETED_KEY, 'true');
         const user = currentUser;
         if (!user) {
           persist((prev) => ({ ...prev, introCompleted: true }));
@@ -402,7 +451,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       deleteMood: (id) => {
         persist((prev) => ({ ...prev, moods: prev.moods.filter((m) => m.id !== id) }));
       },
-      bookAppointment: ({ counselorId, date, time, type, notes, isAnonymous }) => {
+      bookAppointment: async ({ counselorId, date, time, type, durationMin, notes, isAnonymous }) => {
         const user = requireUser();
         const appt: Appointment = {
           id: uid(),
@@ -410,13 +459,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           counselorId,
           date,
           time,
-          durationMin: 50,
+          durationMin,
           type,
           status: 'pending',
           notes,
           isAnonymous,
         };
-        persist((prev) => ({ ...prev, appointments: [appt, ...prev.appointments] }));
+        try {
+          await persist((prev) => ({ ...prev, appointments: [appt, ...prev.appointments] }));
+        } catch (error) {
+          replaceState((prev) => ({
+            ...prev,
+            appointments: prev.appointments.filter((appointment) => appointment.id !== appt.id),
+          }));
+          throw error;
+        }
         return appt;
       },
       updateAppointment: (id, patch) => {
@@ -600,7 +657,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }));
       },
     };
-  }, [authStartupError, currentUser, persist, ready, state, syncError, syncUserProfile]);
+  }, [authStartupError, currentUser, introReady, persist, ready, state, syncError, syncUserProfile]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

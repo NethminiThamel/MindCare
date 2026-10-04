@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { PrimaryButton, Screen } from '../components/ui';
 import { colors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
 
 export default function Consent() {
-  const { acceptConsent, currentUser } = useApp();
+  const { acceptConsent, currentUser, ready } = useApp();
   const [care, setCare] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   const [error, setError] = useState('');
+
+  if (!ready) return <Screen><Text style={styles.body}>Loading your account...</Text></Screen>;
+  if (!currentUser) return <Redirect href="/login" />;
+  if (!currentUser.onboardingComplete) return <Redirect href="/onboarding" />;
+  if (currentUser.consentAccepted) {
+    return <Redirect href={currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'} />;
+  }
 
   return (
     <Screen>
@@ -22,8 +29,9 @@ export default function Consent() {
       <View style={styles.box}>
         <Text style={styles.boxTitle}>What we store</Text>
         <Text style={styles.body}>
-          Your account profile syncs through Firebase. Mood logs, appointments, chats, and your crisis
-          plan remain on this device in this version.
+          Your account profile and wellness data are stored in the MindCare Firebase database. Only
+          data needed for your account and care is available to authorized people under campus
+          counseling policies.
         </Text>
       </View>
       <Check row="I understand MindCare is support, not a crisis replacement." value={care} onToggle={() => setCare(!care)} />
@@ -36,10 +44,6 @@ export default function Consent() {
         label="I agree, continue"
         disabled={!care || !privacy}
         onPress={async () => {
-          if (!currentUser) {
-            router.replace('/login');
-            return;
-          }
           try {
             await acceptConsent();
           } catch (cause) {

@@ -7,7 +7,7 @@ export const faqs = [
   {
     category: 'Privacy',
     q: 'Who can see my mood logs?',
-    a: 'In this demo, your information is stored locally on this device. You can control whether mood summaries are shared with your counselor in Privacy settings.',
+    a: 'Your mood logs are stored in your Firebase account. You can control whether mood summaries are shared with your counselor in Privacy settings.',
   },
   {
     category: 'Privacy',
@@ -42,7 +42,7 @@ export const faqs = [
   {
     category: 'Account & settings',
     q: 'How do I change my privacy or notification settings?',
-    a: 'Open Profile and choose Profile & privacy, Advanced privacy, Safety settings or Notifications. Changes in this demo are saved on this device.',
+    a: 'Open Profile and choose Profile & privacy, Advanced privacy, Safety settings or Notifications. Your preferences are saved to your Firebase account.',
   },
   {
     category: 'Getting started',
