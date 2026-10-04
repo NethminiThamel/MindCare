@@ -1,6 +1,6 @@
-import type { MoodKey } from './constants/theme';
+import type { MoodKey } from "./constants/theme";
 
-export type UserRole = 'student' | 'counselor';
+export type UserRole = "student" | "counselor";
 
 export type User = {
   id: string;
@@ -15,6 +15,7 @@ export type User = {
   title?: string;
   specialties?: string[];
   avatarColor: string;
+  profileImage?: string;
   onboardingComplete: boolean;
   consentAccepted: boolean;
   hideFromDirectory?: boolean;
@@ -40,8 +41,12 @@ export type Counselor = {
   avatarColor: string;
 };
 
-export type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled' | 'pending';
-export type AppointmentType = 'video' | 'chat' | 'in-person';
+export type AppointmentStatus =
+  | "upcoming"
+  | "completed"
+  | "cancelled"
+  | "pending";
+export type AppointmentType = "video" | "chat" | "in-person";
 
 export type Appointment = {
   id: string;
@@ -61,7 +66,7 @@ export type Message = {
   id: string;
   counselorId: string;
   userId: string;
-  sender: 'student' | 'counselor';
+  sender: "student" | "counselor";
   text: string;
   createdAt: string;
 };
@@ -71,7 +76,7 @@ export type CrisisResource = {
   title: string;
   description: string;
   phone?: string;
-  category: 'immediate' | 'campus' | 'coping';
+  category: "immediate" | "campus" | "coping";
 };
 
 export type EmergencyContact = {
@@ -123,10 +128,10 @@ export type CounselorAvailability = {
   counselorId: string;
   isAcceptingSessions: boolean;
   recurringWeekly?: boolean;
-  sessionFormats?: { key: 'standard' | 'quick' | 'urgent'; enabled: boolean }[];
+  sessionFormats?: { key: "standard" | "quick" | "urgent"; enabled: boolean }[];
   deliveryMethods?: AppointmentType[];
   days: {
-    day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
+    day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
     enabled: boolean;
     start: string;
     end: string;
@@ -139,7 +144,7 @@ export type CounselorNotification = {
   counselorId: string;
   title: string;
   message: string;
-  type: 'request' | 'chat' | 'crisis' | 'system';
+  type: "request" | "chat" | "crisis" | "system";
   createdAt: string;
   read: boolean;
   appointmentId?: string;

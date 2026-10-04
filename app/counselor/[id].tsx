@@ -20,7 +20,7 @@ export default function CounselorProfile() {
     <Screen>
       <BackHeader title="Profile" />
       <View style={{ alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <Avatar name={c.name} color={c.avatarColor} size={84} />
+        <Avatar name={c.name} color={c.avatarColor} size={84} profileType="counselor" />
         <Text style={styles.name}>{c.name}</Text>
         <Text style={styles.muted}>{c.title}</Text>
         <Text style={styles.meta}>

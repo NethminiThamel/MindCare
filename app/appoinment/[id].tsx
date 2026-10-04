@@ -25,7 +25,7 @@ export default function AppointmentDetail() {
     <Screen>
       <BackHeader title={appt.status === 'upcoming' ? 'Upcoming' : 'Session'} />
       <View style={{ alignItems: 'center', gap: 6, marginBottom: 16 }}>
-        <Avatar name={counselor.name} color={counselor.avatarColor} size={64} />
+        <Avatar name={counselor.name} color={counselor.avatarColor} size={64} profileType="counselor" />
         <Text style={styles.name}>{counselor.name}</Text>
         <Text style={styles.muted}>{counselor.title}</Text>
         <Pill text={appt.status} tone={appt.status === 'cancelled' ? 'coral' : 'teal'} />

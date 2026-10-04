@@ -195,7 +195,7 @@ export default function Done() {
           <Text style={styles.confirmBody}>Your session is confirmed. The details are below.</Text>
           <Card style={styles.appointmentCard}>
             <View style={styles.counselorRow}>
-              <Avatar name={counselor.name} color={counselor.avatarColor} size={34} />
+              <Avatar name={counselor.name} color={counselor.avatarColor} size={34} profileType="counselor" />
               <View style={styles.counselorInfo}>
                 <Text style={styles.counselorName}>{counselor.name}</Text>
                 <Text style={styles.counselorTitle}>{counselor.title}</Text>
