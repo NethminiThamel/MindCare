@@ -85,7 +85,7 @@ export default function AppointmentDetail() {
 
       {appt.status === 'upcoming' ? (
         <GhostButton
-          label="Mark completed (demo)"
+          label="Mark completed"
           onPress={() => {
             setAppointmentStatus(appt.id, 'completed');
           }}

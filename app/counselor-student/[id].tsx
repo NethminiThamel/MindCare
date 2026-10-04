@@ -30,7 +30,11 @@ export default function CounselorStudentInfo() {
               <Text style={styles.name}>{displayName}</Text>
               {student && !isAnonymous && (
                 <>
-                  <Text style={styles.meta}>{student.year} · {student.major}</Text>
+                  {student.year || student.major ? (
+                    <Text style={styles.meta}>
+                      {[student.year, student.major].filter(Boolean).join(' · ')}
+                    </Text>
+                  ) : null}
                   <Text style={styles.email}>{student.email}</Text>
                 </>
               )}

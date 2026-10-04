@@ -8,13 +8,14 @@ import { formatTime } from '../lib/format';
 
 export default function Done() {
   const { state } = useApp();
-  const { title, body, href, appointmentId, flow, contactId } = useLocalSearchParams<{
+  const { title, body, href, appointmentId, flow, contactId, returnTo } = useLocalSearchParams<{
     title?: string;
     body?: string;
     href?: string;
     appointmentId?: string;
     flow?: 'reschedule' | 'cancel' | 'trusted-contact' | 'profile' | 'feedback';
     contactId?: string;
+    returnTo?: string;
   }>();
   const appointment = state.appointments.find((item) => item.id === appointmentId);
   const counselor = appointment
@@ -37,7 +38,7 @@ export default function Done() {
             </View>
             <Text style={styles.feedbackTitle}>Feedback Submitted</Text>
             <Text style={styles.feedbackBody}>
-              Your reflections have been recorded on this device. Taking time to process and share your thoughts is an important step in your wellbeing journey.
+              Your reflections have been saved to your Firebase account. Taking time to process and share your thoughts is an important step in your wellbeing journey.
             </Text>
             <View style={styles.feedbackDetails}>
               <View style={styles.feedbackDetailRow}>
@@ -96,7 +97,18 @@ export default function Done() {
               <Ionicons name="shield-checkmark" size={14} color={colors.tealDark} />
             </View>
           </View>
-          <Pressable onPress={() => router.replace('/trusted-contacts')} style={styles.flowAction} accessibilityRole="button">
+          <Pressable
+            onPress={() => router.replace({
+              pathname: '/trusted-contacts',
+              params: {
+                returnTo: returnTo === '/(tabs)/profile' || returnTo === '/(tabs)/sos'
+                  ? returnTo
+                  : '/(tabs)',
+              },
+            })}
+            style={styles.flowAction}
+            accessibilityRole="button"
+          >
             <Text style={styles.flowActionText}>Back to Trusted Contacts</Text>
           </Pressable>
         </View>
@@ -114,13 +126,13 @@ export default function Done() {
       <Screen padded={false}>
         <View style={styles.flowConfirmation}>
           <View style={styles.flowBadge}><Ionicons name="checkmark" size={22} color={colors.white} /></View>
-          <Text style={styles.flowTitle}>Reschedule Confirmed</Text>
+          <Text style={styles.flowTitle}>Reschedule Request Sent</Text>
           <Text style={styles.flowBody}>
-            Your session with {counselor.name} is now scheduled for {newDate} at {formatTime(appointment.time)}.
+            Your reschedule request for {newDate} at {formatTime(appointment.time)} has been sent to {counselor.name}. The new time is pending counselor approval.
           </Text>
           <View style={styles.savedPill}>
             <View style={styles.savedDot} />
-            <Text style={styles.savedText}>Saved to MindCare sessions</Text>
+            <Text style={styles.savedText}>Request saved to Firebase</Text>
           </View>
           <Pressable onPress={() => router.replace('/sessions?tab=upcoming')} style={styles.flowAction} accessibilityRole="button">
             <Text style={styles.flowActionText}>Back to My Sessions</Text>
@@ -221,11 +233,11 @@ export default function Done() {
             </View>
             <Text style={styles.profileUpdatedTitle}>Profile Updated</Text>
             <Text style={styles.profileUpdatedBody}>
-              Your personal details and privacy preferences have been saved on this device.
+              Your personal details and privacy preferences have been saved to your Firebase account.
             </Text>
             <View style={styles.profileSavedPill}>
               <Ionicons name="time-outline" size={12} color={colors.tealDark} />
-              <Text style={styles.profileSavedText}>Effective now · Saved locally</Text>
+              <Text style={styles.profileSavedText}>Effective now · Saved to Firebase</Text>
             </View>
           </Card>
           <Pressable
@@ -250,7 +262,7 @@ export default function Done() {
             </View>
           </View>
           <Text style={styles.title}>{title ?? 'Saved'}</Text>
-          <Text style={styles.body}>{body ?? 'Your changes are on this device.'}</Text>
+          <Text style={styles.body}>{body ?? 'Your changes have been saved to your Firebase account.'}</Text>
           <Pressable
             onPress={() => router.replace((href as Href) || '/(tabs)')}
             style={({ pressed }) => [styles.genericContinue, pressed && styles.genericButtonPressed]}

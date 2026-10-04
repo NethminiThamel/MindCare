@@ -47,7 +47,7 @@ export default function Sos() {
             : 'Add someone you trust to your contact list.'}
           onPress={() => trustedContact
             ? Linking.openURL(`tel:${trustedContact.phone}`)
-            : router.push('/trusted-contacts')}
+            : router.push({ pathname: '/trusted-contacts', params: { returnTo: '/(tabs)/sos' } })}
         />
         <ActionRow
           icon="options-outline"
@@ -56,7 +56,11 @@ export default function Sos() {
           onPress={() => router.push(breathingResource ? `/crisis/${breathingResource.id}` : '/resources')}
         />
 
-        <Pressable onPress={() => router.push('/trusted-contacts')} style={styles.contactsButton} accessibilityRole="button">
+        <Pressable
+          onPress={() => router.push({ pathname: '/trusted-contacts', params: { returnTo: '/(tabs)/sos' } })}
+          style={styles.contactsButton}
+          accessibilityRole="button"
+        >
           <Ionicons name="person-add-outline" size={14} color={colors.white} />
           <Text style={styles.contactsText}>Add Trusted contacts</Text>
         </Pressable>

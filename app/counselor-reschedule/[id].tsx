@@ -5,16 +5,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Header, Screen } from '../../components/ui';
 import { colors } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
+import { getAvailabilityTimes } from '../../lib/availability';
 import { getActiveCounselorId } from '../../lib/counselor';
 import { formatDate, formatTime } from '../../lib/format';
-
-const times = ['09:00', '10:30', '14:00', '16:30'];
 
 export default function CounselorReschedule() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { currentUser, ready, state, updateAppointment } = useApp();
   const appointment = state.appointments.find((item) => item.id === id);
   const counselorId = getActiveCounselorId(currentUser, state.counselors);
+  const availability = state.availabilities?.find((item) => item.counselorId === counselorId);
+  const durationMin = appointment?.durationMin ?? 50;
   const availableDates = useMemo(
     () => Array.from({ length: 14 }, (_, index) => {
       const date = new Date();
@@ -25,7 +26,10 @@ export default function CounselorReschedule() {
     []
   );
   const [date, setDate] = useState(availableDates[0]);
-  const [time, setTime] = useState(() => times.find((slot) => slot !== appointment?.time) ?? times[0]);
+  const [selectedTime, setSelectedTime] = useState('');
+  const times = getAvailabilityTimes(availability, date, durationMin)
+    .filter((slot) => date !== appointment?.date || slot !== appointment?.time);
+  const time = times.includes(selectedTime) ? selectedTime : times[0] ?? '';
 
   if (!ready) return null;
   if (currentUser?.role !== 'counselor') return <Redirect href="/(tabs)" />;
@@ -57,10 +61,24 @@ export default function CounselorReschedule() {
             return (
               <Pressable
                 key={option}
-                onPress={() => setDate(option)}
-                style={[styles.dateOption, selected && styles.selectedOption]}
+                onPress={() => { setDate(option); setSelectedTime(''); }}
+                disabled={!getAvailabilityTimes(availability, option, durationMin).some(
+                  (slot) => option !== appointment?.date || slot !== appointment?.time
+                )}
+                style={[
+                  styles.dateOption,
+                  selected && styles.selectedOption,
+                  !getAvailabilityTimes(availability, option, durationMin).some(
+                    (slot) => option !== appointment?.date || slot !== appointment?.time
+                  ) && styles.disabledOption,
+                ]}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityState={{
+                  selected,
+                  disabled: !getAvailabilityTimes(availability, option, durationMin).some(
+                    (slot) => option !== appointment?.date || slot !== appointment?.time
+                  ),
+                }}
                 accessibilityLabel={formatDate(option)}
               >
                 <Text style={[styles.dateText, selected && styles.selectedText]}>{formatDate(option)}</Text>
@@ -76,7 +94,7 @@ export default function CounselorReschedule() {
             return (
               <Pressable
                 key={option}
-                onPress={() => setTime(option)}
+                onPress={() => setSelectedTime(option)}
                 style={[styles.timeOption, selected && styles.selectedOption]}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -86,6 +104,9 @@ export default function CounselorReschedule() {
               </Pressable>
             );
           })}
+          {!times.length ? (
+            <Text style={styles.emptyText}>No bookable times are published for this date.</Text>
+          ) : null}
         </View>
 
         <Pressable
@@ -93,7 +114,8 @@ export default function CounselorReschedule() {
             updateAppointment(appointment.id, { date, time });
             router.replace('/(counselor-tabs)/sessions');
           }}
-          style={styles.confirmButton}
+          disabled={!time}
+          style={[styles.confirmButton, !time && styles.disabledOption]}
           accessibilityRole="button"
         >
           <Text style={styles.confirmText}>Confirm New Time</Text>
@@ -121,6 +143,7 @@ const styles = StyleSheet.create({
   timeOption: { minHeight: 42, minWidth: '47%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white },
   timeText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   selectedOption: { borderColor: colors.teal, backgroundColor: '#E7F4F0' },
+  disabledOption: { opacity: 0.4 },
   selectedText: { color: colors.tealDark, fontWeight: '700' },
   confirmButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 'auto', marginBottom: 20, borderRadius: 24, backgroundColor: colors.teal },
   confirmText: { color: colors.white, fontSize: 15, fontWeight: '700' },

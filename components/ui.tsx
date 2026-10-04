@@ -25,7 +25,11 @@ export function Screen({
   scroll?: boolean;
   padded?: boolean;
 }) {
-  const inner = <View style={[styles.body, padded && styles.padded]}>{children}</View>;
+  const inner = (
+    <View style={[scroll ? styles.body : styles.fixedBody, padded && styles.padded]}>
+      {children}
+    </View>
+  );
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {scroll ? (
@@ -39,10 +43,18 @@ export function Screen({
   );
 }
 
-export function BackHeader({ title, right }: { title: string; right?: React.ReactNode }) {
+export function BackHeader({
+  title,
+  right,
+  onBack,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  onBack?: () => void;
+}) {
   return (
     <View style={styles.header}>
-      <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
+      <Pressable onPress={onBack ?? (() => router.back())} hitSlop={12} style={styles.backBtn}>
         <Ionicons name="chevron-back" size={22} color={colors.tealDark} />
         <Text style={styles.backText}>Back</Text>
       </Pressable>
@@ -237,6 +249,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingBottom: 32 },
   body: { flexGrow: 1 },
+  fixedBody: { flex: 1 },
   padded: { paddingHorizontal: 20, paddingTop: 8 },
   header: {
     flexDirection: 'row',
