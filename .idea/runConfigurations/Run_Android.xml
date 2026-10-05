@@ -1,14 +1,14 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run on Android Emulator" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="powershell.exe -ExecutionPolicy Bypass -File &quot;$PROJECT_DIR$/run_android.ps1&quot;" />
+  <configuration default="false" name="Run Android" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="$sdk=&quot;$env:LOCALAPPDATA\Android\Sdk&quot;; &amp; &quot;$sdk\platform-tools\adb.exe&quot; start-server; if (-not (&amp; &quot;$sdk\platform-tools\adb.exe&quot; devices | Select-String &quot;emulator-\d+\s+device&quot;)) { Start-Process &quot;$sdk\emulator\emulator.exe&quot; -ArgumentList &quot;-avd Pixel -no-snapshot-load -gpu swiftshader_indirect&quot; }; &amp; &quot;$sdk\platform-tools\adb.exe&quot; wait-for-device; do { Start-Sleep 3 } until ((&amp; &quot;$sdk\platform-tools\adb.exe&quot; shell getprop sys.boot_completed) -match &quot;1&quot;); &amp; &quot;$sdk\platform-tools\adb.exe&quot; reverse tcp:8081 tcp:8081; npx expo start --dev-client --android" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
-    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
     <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
     <option name="INTERPRETER_PATH" value="powershell.exe" />
-    <option name="INTERPRETER_OPTIONS" value="-ExecutionPolicy Bypass -Command" />
+    <option name="INTERPRETER_OPTIONS" value="-Command" />
     <option name="EXECUTE_IN_TERMINAL" value="true" />
     <option name="EXECUTE_SCRIPT_FILE" value="false" />
     <envs />

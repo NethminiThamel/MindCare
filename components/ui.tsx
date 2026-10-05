@@ -212,6 +212,19 @@ export function Avatar({
     require("../assets/images/counselor3.jpg"),
     require("../assets/images/counselor-profile.jpg"),
   ];
+  const counselorImagesByName: Record<string, number> = {
+    "jordan lee": counselorImages[0],
+    "sarah patel": counselorImages[1],
+    dilrukshika: counselorImages[2],
+    "anne fernando": counselorImages[3],
+  };
+  const counselorImageHash = [...name.toLowerCase()].reduce(
+    (hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619),
+    2166136261,
+  ) >>> 0;
+  const counselorImage =
+    counselorImagesByName[name.trim().toLowerCase()] ??
+    counselorImages[counselorImageHash % counselorImages.length];
 
   const selectedStudentOption = studentAvatarOptions.find(
     (option) => option.id === profileImage,
@@ -236,12 +249,7 @@ export function Avatar({
   const photoSource =
     customProfileImage ??
     (profileType === "counselor"
-      ? counselorImages[
-          [...name.toLowerCase()].reduce(
-            (sum, char) => sum + char.charCodeAt(0),
-            0,
-          ) % counselorImages.length
-        ]
+      ? counselorImage
       : studentImage);
 
   return (

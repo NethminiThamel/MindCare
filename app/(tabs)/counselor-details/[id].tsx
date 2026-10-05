@@ -40,7 +40,7 @@ export default function CounselorSessionDetails() {
       <View style={styles.content}>
         <View style={styles.header}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/support")}
             style={styles.back}
             accessibilityRole="button"
           >
