@@ -144,7 +144,7 @@ export default function Dashboard() {
               <View style={styles.moodIcon}>
                 <Text style={styles.moodEmoji}>{mood.emoji}</Text>
               </View>
-              <Text style={styles.moodLabel}>
+              <Text style={styles.moodLabel} numberOfLines={1}>
                 {homeMoodLabels[mood.key] ?? mood.label}
               </Text>
             </Pressable>
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   dayNumberActive: { color: colors.tealDark, fontWeight: "700" },
   moodCard: { padding: 12, marginBottom: 13 },
   moodRow: { flexDirection: "row", gap: 4, paddingTop: 10 },
-  moodChoice: { alignItems: "center", gap: 4, width: 34 },
+  moodChoice: { alignItems: "center", gap: 4, width: 58 },
   moodIcon: {
     width: 30,
     height: 30,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   moodEmoji: { fontSize: 17 },
-  moodLabel: { color: colors.muted, fontSize: 11 },
+  moodLabel: { color: colors.muted, fontSize: 10, textAlign: "center" },
   quickHeading: { marginTop: 1, marginBottom: 8 },
   actionCard: {
     flexDirection: "row",
