@@ -1,6 +1,6 @@
 import type { MoodKey } from "./constants/theme";
 
-export type UserRole = "student" | "counselor";
+export type UserRole = "student" | "counselor" | "admin";
 
 export type User = {
   id: string;

@@ -6,6 +6,8 @@ import { useApp } from "../../context/AppContext";
 export default function CounselorTabsLayout() {
   const { currentUser, ready } = useApp();
   if (ready && !currentUser) return <Redirect href="/login" />;
+  if (ready && currentUser?.role === "admin")
+    return <Redirect href="/admin" />;
   if (ready && currentUser && currentUser.role !== "counselor")
     return <Redirect href="/(tabs)" />;
   if (ready && currentUser && !currentUser.onboardingComplete)

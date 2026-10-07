@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Screen } from '../../components/ui';
 import { colors } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
@@ -34,7 +34,11 @@ export default function CounselorChatList() {
     <Screen padded={false}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.brandMark}><Ionicons name="heart-outline" size={17} color={colors.white} /></View>
+          <Image
+            source={require('../../assets/images/logo.jpg')}
+            style={styles.brandMark}
+            accessibilityLabel="MindCare logo"
+          />
           <View style={styles.headingCopy}>
             <Text style={styles.title}>Messages</Text>
             <Text style={styles.sub}>Secure student conversations</Text>
@@ -131,7 +135,7 @@ function FilterChip({ label, active, urgent, onPress }: { label: string; active:
 const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
-  brandMark: { width: 25, height: 25, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#55A998' },
+  brandMark: { width: 31, height: 28, borderRadius: 6 },
   headingCopy: { flex: 1, gap: 1 },
   title: { color: '#397E72', fontSize: 14, fontWeight: '700' },
   sub: { color: '#53645F', fontSize: 14, fontWeight: '500' },

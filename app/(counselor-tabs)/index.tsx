@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../components/ui";
 import { colors } from "../../constants/theme";
 import { useApp } from "../../context/AppContext";
@@ -40,9 +40,11 @@ export default function CounselorDashboard() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.brandHeader}>
-          <View style={styles.brandMark}>
-            <Ionicons name="heart-outline" size={19} color={colors.white} />
-          </View>
+          <Image
+            source={require("../../assets/images/logo.jpg")}
+            style={styles.brandMark}
+            accessibilityLabel="MindCare logo"
+          />
           <View style={styles.brandCopy}>
             <Text style={styles.brandName}>MindCare</Text>
             <Text style={styles.brandCaption}>COUNSELOR DASHBOARD</Text>
@@ -308,12 +310,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   brandMark: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#55A998",
+    width: 34,
+    height: 30,
+    borderRadius: 6,
   },
   brandCopy: { flex: 1, gap: 1 },
   brandName: { color: "#397E72", fontSize: 14, fontWeight: "700" },

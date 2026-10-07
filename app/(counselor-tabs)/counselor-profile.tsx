@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import {
     Alert,
+    Image,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -77,7 +78,11 @@ export default function CounselorProfile() {
       >
         <View style={styles.brandHeader}>
           <View style={styles.brandMark}>
-            <Ionicons name="heart-outline" size={18} color={colors.white} />
+            <Image
+              source={require("../../assets/images/logo.jpg")}
+              style={styles.brandLogo}
+              accessibilityLabel="MindCare logo"
+            />
           </View>
           <View style={styles.brandCopy}>
             <Text style={styles.brandName}>MindCare</Text>
@@ -378,13 +383,10 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   brandMark: {
-    width: 27,
-    height: 27,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#55A998",
   },
+  brandLogo: { width: 34, height: 30, borderRadius: 6 },
   brandCopy: { flex: 1, gap: 1 },
   brandName: { color: "#397E72", fontSize: 15, fontWeight: "700" },
   brandCaption: { color: "#53645F", fontSize: 12, fontWeight: "600" },

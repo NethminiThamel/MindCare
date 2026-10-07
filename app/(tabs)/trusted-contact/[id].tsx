@@ -2,14 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { Avatar, Screen, ToggleRow } from "../../../components/ui";
+import { Avatar, Screen } from "../../../components/ui";
 import { colors } from "../../../constants/theme";
 import { useApp } from "../../../context/AppContext";
 
@@ -83,9 +84,10 @@ export default function EditTrustedContact() {
             profileImage={currentUser?.profileImage}
           />
         </View>
-        <Text style={styles.title}>Edit Trusted Contact</Text>
+        <Text style={styles.title}>My Trusted Contact</Text>
         <Text style={styles.subtitle}>
-          Update their information or emergency-status consent.
+          In case of a severe crisis, we can notify this person if you give us
+          consent.
         </Text>
 
         <View style={styles.formCard}>
@@ -129,23 +131,23 @@ export default function EditTrustedContact() {
             ]}
             accessibilityRole="button"
           >
-            <Text style={styles.saveText}>Save Changes</Text>
+            <Text style={styles.saveText}>Submit &amp; Save</Text>
           </Pressable>
         </View>
-        <ToggleRow
-          label="Share Emergency Status"
-          hint="Allow MindCare to share your emergency status with this contact."
-          value={shareEmergencyStatus}
-          onValueChange={setShareEmergencyStatus}
-        />
-        <Pressable
-          onPress={() => setConfirmDeleteVisible(true)}
-          style={styles.deleteButton}
-          accessibilityRole="button"
-        >
-          <Ionicons name="trash-outline" size={14} color={colors.coral} />
-          <Text style={styles.deleteText}>Delete Trusted Contact</Text>
-        </Pressable>
+
+        <View style={styles.emergencyStatusCard}>
+          <View style={styles.emergencyStatusTextWrap}>
+            <Text style={styles.emergencyStatusTitle}>Share Emergency</Text>
+            <Text style={styles.emergencyStatusTitle}>Status</Text>
+          </View>
+          <Switch
+            value={shareEmergencyStatus}
+            onValueChange={setShareEmergencyStatus}
+            trackColor={{ false: "#DDE6E4", true: "#4E9B8E" }}
+            thumbColor="#F7F9F8"
+            ios_backgroundColor="#DDE6E4"
+          />
+        </View>
       </View>
       <Modal
         transparent
@@ -212,7 +214,13 @@ function ContactField({
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 12, paddingTop: 8 },
+  content: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 20,
+    backgroundColor: "#F4F5F1",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -226,57 +234,77 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   backText: { color: colors.tealDark, fontSize: 14 },
-  title: { color: "#397E72", fontSize: 21, fontWeight: "700" },
+  title: {
+    color: "#3F7E74",
+    fontSize: 42,
+    lineHeight: 44,
+    fontWeight: "700",
+    letterSpacing: -1.5,
+  },
   subtitle: {
     color: "#71847E",
     fontSize: 12,
-    lineHeight: 13,
-    marginTop: 4,
-    marginBottom: 10,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 18,
+    maxWidth: 300,
   },
   formCard: {
-    gap: 8,
-    padding: 9,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 12,
-    backgroundColor: colors.white,
+    gap: 10,
+    paddingTop: 10,
+    paddingHorizontal: 0,
   },
-  fieldGroup: { gap: 4 },
-  fieldLabel: { color: "#788A84", fontSize: 11, fontWeight: "600" },
+  fieldGroup: { gap: 8 },
+  fieldLabel: {
+    color: "#5E7C76",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginLeft: 2,
+  },
   input: {
-    minHeight: 35,
-    paddingHorizontal: 9,
+    minHeight: 48,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#E0EBE7",
-    borderRadius: 10,
-    backgroundColor: "#F6F9F8",
+    borderColor: "#E6EFEA",
+    borderRadius: 12,
+    backgroundColor: "#EEF1EF",
     color: colors.text,
-    fontSize: 12,
+    fontSize: 15,
   },
-  formError: { color: colors.coral, fontSize: 11 },
+  formError: { color: colors.coral, fontSize: 11, marginTop: 4 },
   saveButton: {
-    minHeight: 36,
+    minHeight: 52,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 20,
-    backgroundColor: "#5BA48F",
+    borderRadius: 16,
+    backgroundColor: "#5A9A8E",
+    marginTop: 8,
   },
-  saveText: { color: colors.white, fontSize: 12, fontWeight: "600" },
+  saveText: { color: colors.white, fontSize: 18, fontWeight: "700" },
   pressed: { opacity: 0.8 },
-  deleteButton: {
-    minHeight: 37,
+  emergencyStatusCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    marginTop: 8,
+    justifyContent: "space-between",
+    backgroundColor: "#F4F5F3",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#EFC7BF",
-    borderRadius: 20,
-    backgroundColor: colors.white,
+    borderColor: "#EAEFEA",
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    marginTop: 22,
+    minHeight: 80,
   },
-  deleteText: { color: colors.coral, fontSize: 12, fontWeight: "600" },
+  emergencyStatusTextWrap: {
+    maxWidth: 140,
+  },
+  emergencyStatusTitle: {
+    color: "#3D6A63",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 26,
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",

@@ -15,7 +15,11 @@ export default function Consent() {
   if (!currentUser) return <Redirect href="/login" />;
   if (!currentUser.onboardingComplete) return <Redirect href="/onboarding" />;
   if (currentUser.consentAccepted) {
-    return <Redirect href={currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'} />;
+    return <Redirect href={
+      currentUser.role === 'admin'
+        ? '/admin'
+        : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
+    } />;
   }
 
   return (
@@ -50,7 +54,11 @@ export default function Consent() {
             setError(cause instanceof Error ? cause.message : 'Could not save your consent.');
             return;
           }
-          router.replace(currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)');
+          router.replace(
+            currentUser.role === 'admin'
+              ? '/admin'
+              : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
+          );
         }}
       />
       {error ? <Text style={styles.body} accessibilityRole="alert">{error}</Text> : null}

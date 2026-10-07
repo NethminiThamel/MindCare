@@ -16,6 +16,7 @@ export default function TabLayout() {
   const { currentUser, ready } = useApp();
   const insets = useSafeAreaInsets();
   if (ready && !currentUser) return <Redirect href="/login" />;
+  if (ready && currentUser?.role === 'admin') return <Redirect href="/admin" />;
   if (ready && currentUser?.role === 'counselor') return <Redirect href="/(counselor-tabs)" />;
   if (ready && currentUser && !currentUser.onboardingComplete) return <Redirect href="/onboarding" />;
   if (ready && currentUser && !currentUser.consentAccepted) return <Redirect href="/consent" />;

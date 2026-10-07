@@ -17,7 +17,9 @@ export default function AccountCreated() {
         ? '/onboarding'
         : !currentUser.consentAccepted
           ? '/consent'
-          : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
+          : currentUser.role === 'admin'
+            ? '/admin'
+            : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
     const timer = setTimeout(() => router.replace(destination), 3000);
     return () => clearTimeout(timer);
   }, [ready, currentUser]);

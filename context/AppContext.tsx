@@ -398,8 +398,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       deleteAccount: async () => {
         const user = requireUser();
-        if (user.role === 'counselor') {
-          throw new Error('Counselor accounts must be deprovisioned by an administrator.');
+        if (user.role !== 'student') {
+          throw new Error('Staff accounts must be deprovisioned by an administrator.');
         }
         const firebaseUser = auth.currentUser;
         if (!firebaseUser || firebaseUser.uid !== user.id) {

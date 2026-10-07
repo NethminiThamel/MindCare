@@ -7,7 +7,7 @@ import {
     initializeAuth,
     type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getFirestore, runTransaction, setDoc } from "firebase/firestore";
+import { doc, getDoc, getFirestore, runTransaction, setDoc } from "firebase/firestore";
 import { Platform } from "react-native";
 import type { User } from "./types";
 
@@ -107,7 +107,12 @@ export function profileFromFirebase(
   data: Partial<StoredProfile> = {},
 ): User {
   const email = firebaseUser.email ?? "";
-  const role = data.role === "counselor" ? "counselor" : "student";
+  const role =
+    data.role === "admin"
+      ? "admin"
+      : data.role === "counselor"
+        ? "counselor"
+        : "student";
   return {
     id: firebaseUser.uid,
     name:
@@ -132,7 +137,10 @@ export function profileFromFirebase(
 export function profileDocument(profile: User): StoredProfile {
   const { id: _id, email: _email, ...data } = profile;
   return Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined),
+    Object.entries({
+      ...data,
+      role: profile.role === "admin" ? "student" : profile.role,
+    }).filter(([, value]) => value !== undefined),
   ) as StoredProfile;
 }
 
@@ -149,7 +157,12 @@ export async function getOrCreateProfile(
     transaction.set(profileRef, data);
     return data;
   });
-  return profileFromFirebase(firebaseUser, profileData);
+  const staffSnapshot = await getDoc(doc(db, "staff", firebaseUser.uid));
+  const staffRole = staffSnapshot.exists() ? staffSnapshot.data().role : undefined;
+  return profileFromFirebase(firebaseUser, {
+    ...profileData,
+    role: staffRole === "admin" ? "admin" : profileData.role,
+  });
 }
 
 export async function saveProfile(profile: User): Promise<void> {
