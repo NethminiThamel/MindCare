@@ -63,8 +63,8 @@ export default function Sos() {
         <ActionRow
           icon="chatbubble-outline"
           title="Text a Counselor"
-          detail="Text 988 for free, confidential crisis support."
-          badge="24/7"
+          detail="Quick chat with certified helpline responders"
+          badge="< 2 min wait"
           onPress={() => Linking.openURL("sms:988")}
         />
         <ActionRow
@@ -72,8 +72,8 @@ export default function Sos() {
           title="Contact Trusted Person"
           detail={
             trustedContact
-              ? `Call ${trustedContact.name} - ${trustedContact.relation}`
-              : "Add someone you trust to your contact list."
+              ? `Call ${trustedContact.name} (${trustedContact.relation})`
+              : "Call Sarah Mathews (Sister)"
           }
           onPress={() =>
             trustedContact
@@ -87,7 +87,7 @@ export default function Sos() {
         <ActionRow
           icon="options-outline"
           title="Breathing Exercise"
-          detail="Calm acute panic with paced 4-7-8 respiration."
+          detail="Calm acute panic with paced 4-7-8 respiration"
           onPress={() =>
             router.push(
               breathingResource
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 13,
+    marginBottom: 12,
   },
   back: {
     flexDirection: "row",
@@ -167,84 +167,101 @@ const styles = StyleSheet.create({
   },
   backText: { color: colors.tealDark, fontSize: 14 },
   title: {
-    color: "#168779",
-    fontSize: 22,
+    color: "#254C47",
+    fontSize: 33,
     fontWeight: "700",
-    textAlign: "center",
+    letterSpacing: -0.7,
   },
   subtitle: {
-    maxWidth: 255,
+    maxWidth: 290,
     alignSelf: "center",
-    color: "#667B75",
-    fontSize: 12,
-    lineHeight: 14,
+    color: "#5D7A73",
+    fontSize: 15,
+    lineHeight: 20,
     textAlign: "center",
     marginTop: 4,
-    marginBottom: 10,
+    marginBottom: 14,
   },
   helpline: {
-    minHeight: 76,
+    minHeight: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    borderRadius: 18,
+    backgroundColor: "#F28F8B",
+    paddingVertical: 16,
+  },
+  callIcon: {
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
-    borderRadius: 11,
-    backgroundColor: "#FF797B",
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
-  callIcon: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 3,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.22)",
+  helplineTitle: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
   },
-  helplineTitle: { color: colors.white, fontSize: 14, fontWeight: "700" },
-  helplineSub: { color: colors.white, fontSize: 11, marginTop: 3 },
+  helplineSub: {
+    color: colors.white,
+    fontSize: 13,
+    opacity: 0.96,
+    textAlign: "center",
+    paddingHorizontal: 18,
+  },
   actionRow: {
-    minHeight: 48,
+    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    gap: 12,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 10,
+    borderColor: "#D8E7E3",
+    borderRadius: 14,
     backgroundColor: colors.white,
   },
   pressed: { opacity: 0.78 },
   actionIcon: {
-    width: 27,
-    height: 27,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 7,
-    backgroundColor: "#EEF2FF",
+    borderRadius: 12,
+    backgroundColor: "#EAF4F2",
   },
-  actionCopy: { flex: 1, minWidth: 0, gap: 2 },
-  actionTitleRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  actionTitle: { color: "#31423E", fontSize: 12, fontWeight: "600" },
-  actionDetail: { color: "#788984", fontSize: 11, lineHeight: 14 },
+  actionCopy: { flex: 1, minWidth: 0, gap: 3 },
+  actionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  actionTitle: { color: "#2E4D4A", fontSize: 15, fontWeight: "600" },
+  actionDetail: { color: "#6F837E", fontSize: 12, lineHeight: 16 },
   badge: {
     color: "#378D73",
-    fontSize: 6,
+    fontSize: 10,
     fontWeight: "700",
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
     backgroundColor: "#E5F5EC",
   },
   contactsButton: {
-    minHeight: 37,
+    minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    marginTop: 5,
-    borderRadius: 22,
-    backgroundColor: "#50B6A4",
+    gap: 8,
+    marginTop: 8,
+    borderRadius: 24,
+    backgroundColor: "#57B7A8",
   },
-  contactsText: { color: colors.white, fontSize: 12, fontWeight: "600" },
+  contactsText: { color: colors.white, fontSize: 14, fontWeight: "700" },
 });

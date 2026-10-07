@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '../components/ui';
 import { colors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
@@ -33,6 +33,8 @@ export default function Login() {
       ? '/onboarding'
       : !result.consentAccepted
         ? '/consent'
+      : result.role === 'admin'
+        ? '/admin'
         : result.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)';
     router.replace(destination);
   };
@@ -41,14 +43,16 @@ export default function Login() {
     <Screen>
       <View style={styles.page}>
         <View style={styles.brand}>
-          <View style={styles.logoMark}>
-            <Ionicons name="heart-outline" size={23} color={colors.white} />
-          </View>
+          <Image
+            source={require('../assets/images/logo.jpg')}
+            style={styles.logoImage}
+            accessibilityLabel="MindCare logo"
+          />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to your confidential student sanctuary</Text>
           <View style={styles.privacyPill}>
             <Ionicons name="lock-closed-outline" size={12} color={colors.tealDark} />
-            <Text style={styles.privacyText}>Secure sign-in · private profile sync</Text>
+            <Text style={styles.privacyText}>End-to-end Encrypted. Campus Invisible</Text>
           </View>
         </View>
 
@@ -153,9 +157,17 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: 440, alignSelf: 'center', paddingHorizontal: 2, paddingTop: 22, paddingBottom: 24, gap: 16 },
-  brand: { alignItems: 'center', marginBottom: 2 },
-  logoMark: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#5BA48F', marginBottom: 10 },
-  title: { color: '#182333', fontSize: 25, lineHeight: 31, fontWeight: '800' },
+  brand: { alignItems: 'center', alignSelf: 'stretch', marginBottom: 2 },
+  logoImage: { width: 52, height: 46, borderRadius: 10, marginBottom: 10 },
+  title: {
+    color: '#182333',
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '700',
+    textAlign: 'center',
+    alignSelf: 'stretch',
+    includeFontPadding: false,
+  },
   subtitle: { color: '#53615D', fontSize: 15, textAlign: 'center', marginTop: 4 },
   privacyPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 5, borderRadius: 14, backgroundColor: '#F1EFF8', marginTop: 11 },
   privacyText: { color: '#60627B', fontSize: 12, fontWeight: '500' },
@@ -173,7 +185,7 @@ const styles = StyleSheet.create({
   formError: { color: colors.coral, fontSize: 14, fontWeight: '600' },
   submit: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24, backgroundColor: '#5BA48F', marginTop: 1 },
   submitText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-  foot: { color: '#53615D', textAlign: 'center', fontSize: 14, marginTop: 4 },
+  foot: { color: '#53615D', textAlign: 'center', fontSize: 14, marginTop: 160 },
   link: { color: colors.tealDark, fontWeight: '700' },
   pressed: { opacity: 0.82 },
 });

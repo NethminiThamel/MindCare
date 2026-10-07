@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../../components/ui";
 import { colors } from "../../constants/theme";
 import { useApp } from "../../context/AppContext";
@@ -60,9 +60,11 @@ export default function CounselorSessions() {
     <Screen padded={false}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.headerMark}>
-            <Ionicons name="heart-outline" size={18} color={colors.white} />
-          </View>
+          <Image
+            source={require("../../assets/images/logo.jpg")}
+            style={styles.headerMark}
+            accessibilityLabel="MindCare logo"
+          />
           <View style={styles.headerCopy}>
             <Text style={styles.title}>Appointment Requests &amp; Queue</Text>
             <Text style={styles.subtitle}>
@@ -334,12 +336,9 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   headerMark: {
-    width: 25,
-    height: 25,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 7,
-    backgroundColor: "#55A998",
+    width: 31,
+    height: 28,
+    borderRadius: 6,
   },
   headerCopy: { flex: 1, gap: 2 },
   title: { color: "#397E72", fontSize: 15, fontWeight: "700" },

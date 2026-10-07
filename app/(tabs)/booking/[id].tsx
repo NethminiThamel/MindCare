@@ -121,23 +121,6 @@ export default function Booking() {
           Schedule therapy at your convenience
         </Text>
 
-        <View style={styles.counselorCard}>
-          <Avatar
-            name={counselor.name}
-            color={counselor.avatarColor}
-            size={42}
-            profileType="counselor"
-          />
-          <View style={styles.counselorInfo}>
-            <Text style={styles.name} numberOfLines={1}>
-              {counselor.name}
-            </Text>
-            <Text style={styles.specialty} numberOfLines={1}>
-              {counselor.specialties[0]} Specialist
-            </Text>
-          </View>
-        </View>
-
         <View style={styles.calendarCard}>
           <View style={styles.monthHeader}>
             <Pressable
@@ -382,42 +365,33 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   backText: { color: colors.tealDark, fontSize: 14 },
-  title: { color: "#397E72", fontSize: 22, fontWeight: "700" },
-  subtitle: { color: "#657873", fontSize: 13, marginTop: 4, marginBottom: 13 },
-  counselorCard: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: "#AFC2BC",
-    borderRadius: 11,
-    backgroundColor: colors.white,
+  title: {
+    color: "#254C47",
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: -0.6,
   },
-  counselorInfo: { flex: 1, minWidth: 0, gap: 3 },
-  name: { color: "#344A45", fontSize: 14, fontWeight: "600" },
-  specialty: { color: "#7B8D88", fontSize: 12 },
+  subtitle: { color: "#657873", fontSize: 15, marginTop: 4, marginBottom: 16 },
   calendarCard: {
-    marginTop: 10,
-    padding: 7,
+    marginTop: 2,
+    padding: 10,
     borderWidth: 1,
-    borderColor: "#AFC2BC",
-    borderRadius: 11,
+    borderColor: "#B9D3CD",
+    borderRadius: 16,
     backgroundColor: colors.white,
-    shadowColor: "#183C34",
+    shadowColor: "#0E6A5C",
     shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 1,
   },
   monthHeader: {
-    height: 19,
+    height: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 3,
+    marginBottom: 6,
   },
   monthArrow: {
     width: 22,
@@ -433,76 +407,82 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
     lineHeight: 17,
+    fontWeight: "500",
   },
-  calendarWeek: { flexDirection: "row" },
+  calendarWeek: { flexDirection: "row", marginTop: 2 },
   calendarCell: {
     flex: 1,
-    aspectRatio: 1.55,
-    minHeight: 21,
-    maxHeight: 25,
+    minHeight: 28,
     alignItems: "center",
     justifyContent: "center",
     margin: 1,
     borderWidth: 1,
     borderColor: "#D8E3DF",
-    borderRadius: 7,
+    borderRadius: 999,
     backgroundColor: colors.white,
   },
-  calendarCellSelected: { borderColor: "#55A889", backgroundColor: "#E3F2EB" },
+  calendarCellSelected: {
+    borderColor: "#5AAE9D",
+    backgroundColor: "#DFEFEA",
+    shadowColor: "#5AAE9D",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+  },
   unavailableCell: { opacity: 0.35 },
-  calendarDay: { color: "#586C66", fontSize: 11 },
+  calendarDay: { color: "#586C66", fontSize: 11, fontWeight: "500" },
   outsideMonth: { color: "#A7B4B0" },
   disabledDay: { color: "#CCD5D2" },
   sectionHeading: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 15,
-    marginBottom: 6,
+    marginTop: 16,
+    marginBottom: 10,
   },
-  sectionLabel: { color: "#687C76", fontSize: 12, fontWeight: "600" },
+  sectionLabel: { color: "#687C76", fontSize: 12, fontWeight: "700", letterSpacing: 0.4 },
   selectedDate: { color: colors.muted, fontSize: 12 },
-  timeRow: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
+  timeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   unavailableText: { color: colors.muted, fontSize: 12, paddingVertical: 5 },
   timeChip: {
-    minHeight: 27,
+    minHeight: 32,
     justifyContent: "center",
-    paddingHorizontal: 9,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 9,
+    borderRadius: 12,
     backgroundColor: colors.white,
   },
-  timeText: { color: "#657873", fontSize: 12 },
+  timeText: { color: "#657873", fontSize: 12, fontWeight: "600" },
   selectedChip: { borderColor: "#72B7A5", backgroundColor: "#E7F4F0" },
-  selectedText: { color: "#4E9C8D" },
-  sessionTypeHeading: { marginTop: 12, marginBottom: 5 },
-  formatRow: { flexDirection: "row", gap: 5 },
+  selectedText: { color: "#4E9C8D", fontWeight: "700" },
+  sessionTypeHeading: { marginTop: 16, marginBottom: 8 },
+  formatRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
   formatChip: {
     flex: 1,
-    minHeight: 29,
+    minHeight: 36,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 5,
+    paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 9,
+    borderColor: "#CFE1DB",
+    borderRadius: 12,
     backgroundColor: colors.white,
   },
-  formatText: { color: "#657873", fontSize: 11 },
+  formatText: { color: "#657873", fontSize: 12 },
   bookingError: { color: "#B42318", fontSize: 12, marginTop: 8 },
   bookButton: {
-    minHeight: 43,
+    minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
+    marginTop: 16,
     borderRadius: 24,
     backgroundColor: "#5BA48F",
-    elevation: 3,
+    elevation: 2,
   },
   disabledButton: { opacity: 0.5 },
-  bookText: { color: colors.white, fontSize: 13, fontWeight: "600" },
-  pressed: { opacity: 0.8 },
+  bookText: { color: colors.white, fontSize: 15, fontWeight: "700" },
+  pressed: { opacity: 0.82 },
   notFound: { color: colors.text, fontSize: 14 },
 });
 

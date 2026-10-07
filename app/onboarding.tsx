@@ -2,18 +2,59 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  LayoutChangeEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { Screen } from '../components/ui';
 import { useApp } from '../context/AppContext';
 
 const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' });
-const teal = '#589D8F';
 
 const privacyPoints: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
-  { icon: 'checkmark-circle', text: 'Your private information is protected by your account settings.' },
-  { icon: 'lock-closed', text: 'Your reflections are saved securely to your Firebase account.' },
-  { icon: 'people', text: 'Continue anonymously to use a pseudonym with other students.' },
-  { icon: 'mail', text: 'You can create an account with your university email at any time.' },
+  { icon: 'checkmark', text: 'No one will be able to see your private information' },
+  {
+    icon: 'lock-closed-outline',
+    text: 'Locally encrypted: Your reflections and emotion logs remain stored strictly on this device.',
+  },
+  {
+    icon: 'footsteps-outline',
+    text: 'Just Sign Up with Continue Anonymous and we will take care of the rest',
+  },
+  { icon: 'mail-outline', text: 'You will be anonymous user to all others' },
+];
+
+// Shared center of the artwork (fraction of page height)
+const CENTER_Y_FIRST = 0.31; // screen 1
+const CENTER_Y_OTHER = 0.285; // screens 2 and 3 sit slightly higher
+// Top of the white card on screens 2 and 3 (fraction of page height)
+const CARD_TOP = 0.41;
+// Brand block height (logo 42 + gap 8 + title 42 + gap 8 + tagline ~13)
+const BRAND_HEIGHT = 113;
+
+// Concentric rings: diameter as a fraction of page width
+const RINGS = [
+  { d: 0.84, color: 'rgba(95, 125, 121, 0.26)' },
+  { d: 0.68, color: 'rgba(95, 125, 121, 0.22)' },
+  { d: 0.52, color: 'rgba(95, 125, 121, 0.18)' },
+];
+
+// Tiny decorative dots (fractions of page width / height)
+const DOTS = [
+  { x: 0.16, y: 0.3, teal: false },
+  { x: 0.81, y: 0.34, teal: true },
+  { x: 0.29, y: 0.44, teal: false },
+  { x: 0.73, y: 0.45, teal: false },
+  { x: 0.21, y: 0.66, teal: false },
+  { x: 0.78, y: 0.6, teal: false },
+  { x: 0.6, y: 0.77, teal: false },
 ];
 
 export default function Onboarding() {
@@ -21,6 +62,13 @@ export default function Onboarding() {
   const [index, setIndex] = useState(0);
   const [error, setError] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
+  const window = useWindowDimensions();
+  const [size, setSize] = useState({ w: window.width, h: window.height });
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width !== size.w || height !== size.h) setSize({ w: width, h: height });
+  };
 
   if (!ready || !introReady) {
     return (
@@ -31,7 +79,9 @@ export default function Onboarding() {
   }
   if (currentUser?.onboardingComplete) {
     return <Redirect href={currentUser.consentAccepted
-      ? currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
+      ? currentUser.role === 'admin'
+        ? '/admin'
+        : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
       : '/consent'} />;
   }
   if (!currentUser && state.introCompleted) return <Redirect href="/login" />;
@@ -47,7 +97,11 @@ export default function Onboarding() {
       } else if (!currentUser.consentAccepted) {
         router.replace('/consent');
       } else {
-        router.replace(currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)');
+        router.replace(
+          currentUser.role === 'admin'
+            ? '/admin'
+            : currentUser.role === 'counselor' ? '/(counselor-tabs)' : '/(tabs)'
+        );
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save onboarding.');
@@ -60,56 +114,132 @@ export default function Onboarding() {
     else void finish();
   };
 
+  const { w, h } = size;
+  const centerX = w / 2;
+  const centerY = h * (index === 0 ? CENTER_Y_FIRST : CENTER_Y_OTHER);
+  const visibleDots = index === 0 ? DOTS : DOTS.filter((dot) => dot.y >= 0.6);
+
   return (
     <Screen scroll={false} padded={false}>
-      <LinearGradient colors={['#F7FAF8', '#EAF7F3', '#D8F2EA']} style={styles.page}>
-        <View style={styles.artwork}>
-          <View pointerEvents="none" style={[styles.ring, styles.outerRing]} />
-          <View pointerEvents="none" style={[styles.ring, styles.middleRing]} />
-          <View pointerEvents="none" style={[styles.ring, styles.innerRing]} />
-          <View style={styles.brand}>
-            <View style={styles.logoBadge}>
-              <Ionicons name="heart-outline" size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.logo}>MindCare</Text>
-            <Text style={styles.tagline}>YOUR MENTAL WELLNESS COMPANION</Text>
+      <LinearGradient
+        colors={['#F8FAF9', '#F6F9F8', '#F1F9F6']}
+        style={styles.page}
+        onLayout={onLayout}
+      >
+        {/* Glows + rings in one SVG layer so they share the same coordinates */}
+        <Svg width={w} height={h} style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Defs>
+            <RadialGradient id="obTeal" cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor="#3F8E95" stopOpacity="0.6" />
+              <Stop offset="0.45" stopColor="#6DB3B2" stopOpacity="0.32" />
+              <Stop offset="1" stopColor="#A7D8D2" stopOpacity="0" />
+            </RadialGradient>
+            <RadialGradient id="obMint" cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor="#A9EAD7" stopOpacity="0.75" />
+              <Stop offset="0.6" stopColor="#C6F1E4" stopOpacity="0.38" />
+              <Stop offset="1" stopColor="#E8F9F4" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+
+          {/* teal haze behind logo */}
+          <Ellipse cx={w * 0.45} cy={centerY} rx={w * 0.6} ry={w * 0.6} fill="url(#obTeal)" />
+          {/* mint glow bottom-right */}
+          <Ellipse cx={w * 0.78} cy={h * 0.77} rx={w * 0.7} ry={h * 0.22} fill="url(#obMint)" />
+          {/* faint mint bottom-left */}
+          <Ellipse
+            cx={w * 0.25}
+            cy={h * 0.85}
+            rx={w * 0.5}
+            ry={h * 0.14}
+            fill="url(#obMint)"
+            opacity={0.5}
+          />
+
+          {/* Concentric rings */}
+          {RINGS.map((ring, i) => (
+            <Circle
+              key={i}
+              cx={centerX}
+              cy={centerY}
+              r={(w * ring.d) / 2}
+              stroke={ring.color}
+              strokeWidth={1}
+              fill="none"
+            />
+          ))}
+        </Svg>
+
+        {/* Dots */}
+        {visibleDots.map((dot, i) => (
+          <View
+            key={i}
+            pointerEvents="none"
+            style={[
+              styles.sparkle,
+              { left: w * dot.x, top: h * dot.y },
+              dot.teal && { backgroundColor: '#48A7A0', opacity: 1 },
+            ]}
+          />
+        ))}
+
+        {/* Brand, centered on the same point as the rings */}
+        <View style={[styles.brand, { top: centerY - BRAND_HEIGHT / 2 }]} pointerEvents="none">
+          <View style={styles.logoBadge}>
+            <Image
+              source={require('../assets/images/logo.jpg')}
+              style={styles.logoImage}
+              accessibilityLabel="MindCare logo"
+            />
           </View>
-          <View pointerEvents="none" style={[styles.sparkle, styles.sparkleOne]} />
-          <View pointerEvents="none" style={[styles.sparkle, styles.sparkleTwo]} />
-          <View pointerEvents="none" style={[styles.sparkle, styles.sparkleThree]} />
+          <Text style={styles.logo}>MindCare</Text>
+          <Text style={styles.tagline}>YOUR MENTAL WELLNESS COMPANION</Text>
         </View>
 
-        <View style={styles.messageArea}>
-          {index === 0 ? (
-            <View style={styles.featureRow}>
-              <Feature icon="book-outline" label="Daily Journal" />
-              <Feature icon="leaf-outline" label="Guided Respiration" />
-              <Feature icon="analytics-outline" label="Mood Tracking" />
-            </View>
-          ) : index === 1 ? (
+        {/* Cards for screens 2 and 3 sit right under the brand */}
+        {index === 1 ? (
+          <View style={[styles.cardWrap, { top: h * CARD_TOP }]}>
             <View style={styles.guaranteeCard}>
               <View style={styles.guaranteeHeading}>
-                <Ionicons name="shield-checkmark-outline" size={17} color="#08796F" />
-                <Text style={styles.guaranteeTitle}>A private space, your choice</Text>
+                <Ionicons name="shield-checkmark-outline" size={15} color="#1F2B2E" />
+                <Text style={styles.guaranteeTitle}>Anonymous Sign Up Guarantee</Text>
               </View>
-              {privacyPoints.map((point) => (
-                <View key={point.text} style={styles.guaranteeRow}>
-                  <View style={styles.pointIcon}>
-                    <Ionicons name={point.icon} size={12} color="#2B887C" />
+              <View style={styles.guaranteeBody}>
+                {privacyPoints.map((point) => (
+                  <View key={point.text} style={styles.guaranteeRow}>
+                    <View style={styles.pointIcon}>
+                      <Ionicons name={point.icon} size={11} color="#3E8C80" />
+                    </View>
+                    <Text style={styles.guaranteeText}>{point.text}</Text>
                   </View>
-                  <Text style={styles.guaranteeText}>{point.text}</Text>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
-          ) : (
+          </View>
+        ) : null}
+
+        {index === 2 ? (
+          <View style={[styles.cardWrap, { top: h * CARD_TOP }]}>
             <View style={styles.tailoredCard}>
               <Text style={styles.tailoredTitle}>Tailored to Your Emotional Rhythm</Text>
               <Text style={styles.tailoredBody}>
-                Personalised practices that adapt to how you feel each morning and evening.
+                Personalized practices that adapt to how you feel each morning and evening.
               </Text>
             </View>
-          )}
-        </View>
+          </View>
+        ) : null}
+
+        {/* Pushes the content below to the bottom */}
+        <View style={styles.spacer} />
+
+        {index === 0 ? (
+          <View style={styles.messageArea}>
+            <View style={styles.featureRow}>
+              <Feature label="Daily Journal" />
+              <Feature label="Guided Respiration" />
+              <Feature label="Mood Tracking" />
+            </View>
+          </View>
+        ) : null}
 
         {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
@@ -129,7 +259,13 @@ export default function Onboarding() {
               >
                 <Text style={styles.skipText}>Skip</Text>
               </Pressable>
-              <ActionButton label={isFinishing ? 'Saving...' : 'Next'} onPress={next} disabled={isFinishing} arrow expand />
+              <ActionButton
+                label={isFinishing ? 'Saving...' : 'Next'}
+                onPress={next}
+                disabled={isFinishing}
+                arrow
+                expand
+              />
             </View>
           ) : (
             <ActionButton
@@ -144,10 +280,9 @@ export default function Onboarding() {
   );
 }
 
-function Feature({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+function Feature({ label }: { label: string }) {
   return (
     <View style={styles.feature}>
-      <Ionicons name={icon} size={12} color="#357B70" />
       <Text style={styles.featureText} numberOfLines={1}>{label}</Text>
     </View>
   );
@@ -185,110 +320,183 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 16 },
-  artwork: { flex: 1.35, minHeight: 230, justifyContent: 'center', alignItems: 'center' },
-  ring: { position: 'absolute', aspectRatio: 1, borderRadius: 500, alignSelf: 'center' },
-  outerRing: { top: '0%', width: '98%', borderWidth: 1, borderColor: 'rgba(81, 125, 119, 0.15)' },
-  middleRing: { top: '12%', width: '76%', borderWidth: 1, borderColor: 'rgba(81, 125, 119, 0.22)' },
-  innerRing: { top: '24%', width: '56%', borderWidth: 1, borderColor: 'rgba(81, 125, 119, 0.2)' },
-  brand: { alignItems: 'center', zIndex: 1 },
+  page: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingBottom: 24,
+    backgroundColor: '#F6F9F8',
+  },
+  spacer: { flex: 1 },
+  sparkle: {
+    position: 'absolute',
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#4F6A72',
+    opacity: 0.6,
+  },
+  brand: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   logoBadge: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: 12,
+    backgroundColor: '#5E9E92',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+  },
+  logo: {
+    color: '#1F2B2E',
+    fontFamily: SERIF,
+    fontSize: 34,
+    lineHeight: 42,
+    letterSpacing: -1,
+  },
+  tagline: {
+    color: '#1F2B2E',
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    marginTop: 8,
+  },
+
+  // Screen 1
+  messageArea: { justifyContent: 'flex-end', paddingBottom: 10 },
+  featureRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  feature: {
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: teal,
-    marginBottom: 6,
-  },
-  logo: { color: '#193D3B', fontFamily: SERIF, fontSize: 37, lineHeight: 43 },
-  tagline: { color: '#365957', fontSize: 9, fontWeight: '600', letterSpacing: 0.55, marginTop: 4 },
-  sparkle: { position: 'absolute', width: 3, height: 3, borderRadius: 2, backgroundColor: '#45BFB2' },
-  sparkleOne: { left: '14%', top: '52%' },
-  sparkleTwo: { right: '14%', top: '63%' },
-  sparkleThree: { right: '32%', bottom: '5%' },
-  messageArea: { flex: 0.95, justifyContent: 'center', minHeight: 114 },
-  featureRow: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  feature: {
-    minHeight: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 11,
     borderWidth: 1,
-    borderColor: 'rgba(84, 157, 143, 0.18)',
-    borderRadius: 15,
-    backgroundColor: 'rgba(216, 242, 234, 0.72)',
+    borderColor: 'rgba(84, 157, 143, 0.28)',
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
-  featureText: { color: '#356A63', fontSize: 9 },
+  featureText: { color: '#2F5F58', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.2 },
+
+  // Screens 2 and 3
+  cardWrap: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+  },
   guaranteeCard: {
     borderWidth: 1.5,
-    borderColor: '#08796F',
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    gap: 9,
+    borderColor: '#0B6B63',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.97)',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    elevation: 2,
+    shadowColor: '#1F413E',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
-  guaranteeHeading: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 1 },
-  guaranteeTitle: { color: '#163C38', fontSize: 14, fontWeight: '700' },
-  guaranteeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  guaranteeHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 9,
+    marginBottom: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E4EAE8',
+  },
+  guaranteeTitle: { color: '#1F2B2E', fontSize: 16, fontWeight: '600' },
+  guaranteeBody: { gap: 11 },
+  guaranteeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pointIcon: {
-    width: 17,
-    height: 17,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D9F1EB',
+    backgroundColor: '#E1EEEA',
   },
-  guaranteeText: { flex: 1, color: '#27433F', fontSize: 10, lineHeight: 14 },
+  guaranteeText: { flex: 1, color: '#1F2B2E', fontSize: 11, lineHeight: 15 },
   tailoredCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 22,
     borderWidth: 1.5,
-    borderColor: '#08796F',
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderColor: '#0B6B63',
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.97)',
+    elevation: 2,
+    shadowColor: '#1F413E',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   tailoredTitle: {
-    color: '#163C38',
+    color: '#1F2B2E',
     fontFamily: SERIF,
     fontSize: 22,
+    fontWeight: '600',
     lineHeight: 28,
     textAlign: 'center',
   },
-  tailoredBody: { color: '#687672', fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 8 },
+  tailoredBody: {
+    color: '#5F6B69',
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+
   error: { color: '#A8313B', fontSize: 12, textAlign: 'center', marginVertical: 3 },
-  footer: { flex: 0.76, minHeight: 88, justifyContent: 'flex-end', gap: 18, paddingBottom: 2 },
+  footer: {
+    justifyContent: 'flex-end',
+    gap: 22,
+  },
   pagination: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#A7A6BE' },
-  activeDot: { width: 22, backgroundColor: '#064D48' },
-  firstActions: { flexDirection: 'row', gap: 9 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#B4B9C6' },
+  activeDot: { width: 28, backgroundColor: '#0B4B46' },
+  firstActions: { flexDirection: 'row', gap: 12 },
   skipButton: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    borderWidth: 1,
-    borderColor: '#E0EAE6',
+    borderRadius: 27,
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#1F413E',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
-  skipText: { color: '#24443E', fontSize: 13, fontWeight: '600' },
+  skipText: { color: '#1F2B2E', fontSize: 15, fontWeight: '600' },
   actionButton: {
-    minHeight: 44,
+    minHeight: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 24,
-    backgroundColor: teal,
+    borderRadius: 27,
+    backgroundColor: '#5A9C8E',
     elevation: 3,
+    shadowColor: '#2B7671',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   expandedAction: { flex: 1 },
-  actionText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  actionText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.65 },
   pressed: { opacity: 0.82 },
 });

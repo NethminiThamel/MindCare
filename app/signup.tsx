@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Screen } from '../components/ui';
 import { colors } from '../constants/theme';
@@ -20,7 +20,7 @@ export default function Signup() {
     const next: Record<string, string> = {};
     if (!email.trim()) next.email = 'University email is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email.';
-    if (password.length < 8) next.password = 'Use at least 8 characters.';
+    if (password.length < 8) next.password = 'Use at least 6 characters.';
     if (password !== confirm) next.confirm = 'Passwords do not match.';
     if (Object.keys(next).length) {
       setErrors(next);
@@ -39,13 +39,15 @@ export default function Signup() {
     <Screen padded={false}>
       <View style={styles.page}>
         <View style={styles.brand}>
-          <View style={styles.logoMark}>
-            <Ionicons name="heart-outline" size={22} color={colors.white} />
-          </View>
+          <Image
+            source={require('../assets/images/logo.jpg')}
+            style={styles.logoImage}
+            accessibilityLabel="MindCare logo"
+          />
           <Text style={styles.title}>Create Account</Text>
           <View style={styles.privacyPill}>
             <Ionicons name="lock-closed-outline" size={11} color={colors.tealDark} />
-            <Text style={styles.privacyText}>Private support, on your terms</Text>
+            <Text style={styles.privacyText}>End-to-end Encrypted. Campus Invisible</Text>
           </View>
         </View>
 
@@ -182,7 +184,7 @@ export default function Signup() {
 const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: 440, alignSelf: 'center', paddingHorizontal: 12, paddingTop: 2, paddingBottom: 20 },
   brand: { alignItems: 'center', marginBottom: 2 },
-  logoMark: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#5B9F91', alignItems: 'center', justifyContent: 'center' },
+  logoImage: { width: 44, height: 39, borderRadius: 9 },
   title: { fontSize: 19, fontWeight: '700', color: '#172331', marginTop: 7 },
   privacyPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, backgroundColor: '#F0ECFA', marginTop: 7 },
   privacyText: { color: '#625489', fontSize: 12, fontWeight: '500' },
