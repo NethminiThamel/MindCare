@@ -5,6 +5,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'reac
 import { Screen } from '../components/ui';
 import { colors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
+import { validateEmail } from '../utils/formValidation';
 
 export default function Login() {
   const { authStartupError, login, resetPassword } = useApp();
@@ -14,9 +15,7 @@ export default function Login() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
 
   const submit = async () => {
-    const next: typeof errors = {};
-    if (!email.trim()) next.email = 'University email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email.';
+    const next: typeof errors = { email: validateEmail(email) };
     if (!password) next.password = 'Password is required.';
     if (next.email || next.password) {
       setErrors(next);
@@ -74,7 +73,11 @@ export default function Login() {
                 value={email}
                 onChangeText={(value) => {
                   setEmail(value);
-                  if (errors.email || errors.form) setErrors({});
+                  setErrors((current) => ({
+                    ...current,
+                    email: validateEmail(value),
+                    form: undefined,
+                  }));
                 }}
                 accessibilityLabel="University email"
               />
@@ -90,8 +93,9 @@ export default function Login() {
               <Pressable
                 onPress={async () => {
                   const normalizedEmail = email.trim().toLowerCase();
-                  if (!normalizedEmail) {
-                    setErrors({ email: 'Enter your email address first.' });
+                  const emailError = validateEmail(normalizedEmail);
+                  if (emailError) {
+                    setErrors((current) => ({ ...current, email: emailError }));
                     return;
                   }
                   const error = await resetPassword(normalizedEmail);
@@ -117,7 +121,11 @@ export default function Login() {
                 value={password}
                 onChangeText={(value) => {
                   setPassword(value);
-                  if (errors.password || errors.form) setErrors({});
+                  setErrors((current) => ({
+                    ...current,
+                    password: value ? undefined : 'Password is required.',
+                    form: undefined,
+                  }));
                 }}
                 onSubmitEditing={submit}
                 accessibilityLabel="Password"

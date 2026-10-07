@@ -76,19 +76,17 @@ function BottomTabButton({
       accessibilityRole="tab"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
-      style={[style as StyleProp<ViewStyle>, styles.tabButton, isCenter && styles.centerButton]}
+      style={[
+        style as StyleProp<ViewStyle>,
+        styles.tabButton,
+        isCenter && styles.centerButton,
+        isFocused && !isCenter && [
+          styles.tabButtonActive,
+          label === 'SOS' && styles.sosButtonActive,
+        ],
+      ]}
     >
-      {label === 'Home' && isFocused ? (
-        <View style={styles.homePill}>
-          <Ionicons name={iconName} size={15} color={colors.white} />
-          <Text style={styles.homeLabel}>Home</Text>
-        </View>
-      ) : label === 'SOS' && isFocused ? (
-        <View style={styles.sosPill}>
-          <Ionicons name="shield-checkmark" size={15} color={colors.white} />
-          <Text style={styles.homeLabel}>SOS</Text>
-        </View>
-      ) : isCenter ? (
+      {isCenter ? (
         <>
           <View style={[styles.centerIcon, isFocused && styles.centerIconActive]}>
             <Ionicons name="add" size={27} color={isFocused ? colors.white : colors.tealDark} />
@@ -96,10 +94,10 @@ function BottomTabButton({
           <Text style={[styles.centerLabel, isFocused && styles.centerLabelActive]}>Check-in</Text>
         </>
       ) : (
-        <View style={[styles.tabPill, isFocused && styles.tabPillActive]}>
-          <Ionicons name={iconName} size={18} color={color} />
+        <>
+          <Ionicons name={iconName} size={isFocused ? 15 : 18} color={color} />
           <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
-        </View>
+        </>
       )}
     </Pressable>
   );
@@ -122,40 +120,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.line,
   },
-  tabButton: { flex: 1, minWidth: 0, height: 48, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 },
-  tabPill: {
-    width: '96%',
-    minHeight: 40,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    borderRadius: 24,
-  },
-  tabPillActive: { backgroundColor: colors.teal },
-  homePill: {
-    width: '96%',
-    minHeight: 40,
-    borderRadius: 24,
+  tabButton: { flex: 1, minWidth: 0, height: 48, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 24, backgroundColor: 'transparent' },
+  tabButtonActive: {
+    height: 40,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'center',
     gap: 4,
-    paddingHorizontal: 3,
+    marginHorizontal: 2,
     backgroundColor: colors.teal,
   },
-  sosPill: {
-    width: '96%',
-    minHeight: 40,
-    borderRadius: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 3,
-    backgroundColor: colors.coral,
-  },
-  homeLabel: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  sosButtonActive: { backgroundColor: colors.coral },
   tabLabel: { color: '#35413F', fontSize: 12, lineHeight: 15 },
   tabLabelActive: { color: colors.white, fontWeight: '700' },
   centerButton: { gap: 1 },

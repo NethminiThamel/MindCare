@@ -5,6 +5,7 @@ import { Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextIn
 import { Avatar, BackHeader, Card, Screen } from '../../components/ui';
 import { colors } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
+import { validateEmail, validatePhone, validateRequiredName } from '../../utils/formValidation';
 
 export default function TrustedContacts() {
   const { ready } = useApp();
@@ -36,22 +37,22 @@ function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack
   const [email, setEmail] = useState('');
   const [shareEmergencyStatus, setShareEmergencyStatus] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const contactToDelete = contacts.find((contact) => contact.id === deleteContactId);
   const allowTrustedContactInCrisis = settings?.allowTrustedContactInCrisis ?? true;
   const shareLocationDuringCrisis = settings?.shareLocationDuringCrisis ?? false;
 
   const save = () => {
-    if (!name.trim() || !phone.trim()) {
-      setFormError('Enter a contact name and phone number.');
+    const next = {
+      name: validateRequiredName(name),
+      phone: validatePhone(phone),
+      email: validateEmail(email, false),
+    };
+    if (Object.values(next).some(Boolean)) {
+      setErrors(next);
       return;
     }
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setFormError('Enter a valid email address or leave it blank.');
-      return;
-    }
-    setFormError('');
     const contact = addContact({
       name: name.trim(),
       relation: relation.trim() || 'Support person',
@@ -76,7 +77,10 @@ function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>TRUSTED CONTACTS</Text>
               <Pressable
-                onPress={() => { setShowAddForm((shown) => !shown); setFormError(''); }}
+                onPress={() => {
+                  setShowAddForm((shown) => !shown);
+                  setErrors({});
+                }}
                 style={styles.addButton}
                 accessibilityRole="button"
               >
@@ -86,23 +90,33 @@ function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack
             </View>
 
             {contacts.length ? contacts.map((contact) => (
-              <Pressable
-                key={contact.id}
-                onPress={() => router.push({
-                  pathname: '/trusted-contact/[id]',
-                  params: { id: contact.id, returnTo },
-                })}
-                style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={`Edit ${contact.name}`}
-              >
-                <Avatar name={contact.name} color={colors.teal} size={38} />
-                <View style={styles.contactCopy}>
-                  <Text style={styles.contactName}>{contact.name}</Text>
-                  <Text style={styles.contactMeta}>{contact.relation} · {contact.phone}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-              </Pressable>
+              <View key={contact.id} style={styles.contactRow}>
+                <Pressable
+                  onPress={() => router.push({
+                    pathname: '/trusted-contact/[id]',
+                    params: { id: contact.id, returnTo },
+                  })}
+                  style={({ pressed }) => [styles.contactDetails, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${contact.name}`}
+                >
+                  <Avatar name={contact.name} color={colors.teal} size={38} />
+                  <View style={styles.contactCopy}>
+                    <Text style={styles.contactName}>{contact.name}</Text>
+                    <Text style={styles.contactMeta}>{contact.relation} · {contact.phone}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+                </Pressable>
+                <Pressable
+                  onPress={() => setDeleteContactId(contact.id)}
+                  style={styles.deleteContactButton}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${contact.name}`}
+                >
+                  <Ionicons name="trash-outline" size={17} color={colors.coral} />
+                </Pressable>
+              </View>
             )) : (
               <Text style={styles.emptyContacts}>Add someone you trust to your crisis support plan.</Text>
             )}
@@ -111,10 +125,47 @@ function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack
           {showAddForm ? (
             <Card style={styles.card}>
               <Text style={styles.formTitle}>Add a trusted contact</Text>
-              <ContactField label="CONTACT NAME" value={name} onChangeText={setName} placeholder="Contact name" />
+              <ContactField
+                label="CONTACT NAME"
+                value={name}
+                onChangeText={(value) => {
+                  setName(value);
+                  setErrors((current) => ({ ...current, name: validateRequiredName(value) }));
+                }}
+                error={errors.name}
+                placeholder="Contact name"
+              />
               <ContactField label="RELATIONSHIP" value={relation} onChangeText={setRelation} placeholder="Parent, sibling, friend..." />
-              <ContactField label="PHONE NUMBER" value={phone} onChangeText={setPhone} placeholder="Phone number" keyboardType="phone-pad" />
-              <ContactField label="EMAIL ADDRESS" value={email} onChangeText={setEmail} placeholder="Email address (optional)" keyboardType="email-address" autoCapitalize="none" />
+              <ContactField
+                label="PHONE NUMBER"
+                value={phone}
+                onChangeText={(value) => {
+                  const digits = value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(digits);
+                  setErrors((current) => ({ ...current, phone: validatePhone(digits) }));
+                }}
+                error={errors.phone}
+                placeholder="10-digit phone number"
+                inputMode="numeric"
+                maxLength={10}
+                onKeyPress={(event) => {
+                  const { key } = event.nativeEvent;
+                  if (key.length === 1 && !/^\d$/.test(key)) event.preventDefault();
+                }}
+              />
+              <ContactField
+                label="EMAIL ADDRESS"
+                value={email}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  setErrors((current) => ({ ...current, email: validateEmail(value, false) }));
+                }}
+                error={errors.email}
+                placeholder="Email address (optional)"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
               <View style={styles.contactShareRow}>
                 <Text style={styles.contactShareLabel}>Share emergency status with this contact</Text>
                 <Switch
@@ -124,7 +175,6 @@ function TrustedContactsContent({ returnTo, onBack }: { returnTo: string; onBack
                   thumbColor={colors.white}
                 />
               </View>
-              {formError ? <Text style={styles.formError} accessibilityRole="alert">{formError}</Text> : null}
               <Pressable onPress={save} style={styles.saveButton} accessibilityRole="button">
                 <Text style={styles.saveText}>Save Contact</Text>
               </Pressable>
@@ -209,12 +259,19 @@ function SafetyToggle({
 
 function ContactField({
   label,
+  error,
   ...props
-}: React.ComponentProps<typeof TextInput> & { label: string }) {
+}: React.ComponentProps<typeof TextInput> & { label: string; error?: string }) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput {...props} placeholderTextColor={colors.muted} style={styles.input} />
+      <TextInput
+        {...props}
+        placeholderTextColor={colors.muted}
+        style={[styles.input, error ? styles.inputError : null]}
+        accessibilityHint={error}
+      />
+      {error ? <Text style={styles.formError} accessibilityRole="alert">{error}</Text> : null}
     </View>
   );
 }
@@ -228,7 +285,9 @@ const styles = StyleSheet.create({
   sectionLabel: { color: colors.tealDark, fontSize: 13, fontWeight: '700' },
   addButton: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 4 },
   addText: { color: colors.tealDark, fontSize: 14, fontWeight: '600' },
-  contactRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 9, marginTop: 7, borderWidth: 1, borderColor: colors.line, borderRadius: 13, backgroundColor: colors.white },
+  contactRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, marginTop: 7, borderWidth: 1, borderColor: colors.line, borderRadius: 13, backgroundColor: colors.white },
+  contactDetails: { minHeight: 44, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 3 },
+  deleteContactButton: { width: 38, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   contactCopy: { flex: 1, gap: 4 },
   contactName: { color: colors.text, fontSize: 15, fontWeight: '600' },
   contactMeta: { color: colors.muted, fontSize: 13 },
@@ -237,6 +296,7 @@ const styles = StyleSheet.create({
   fieldGroup: { gap: 5, marginTop: 8 },
   fieldLabel: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   input: { minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: '#F6F9F8', color: colors.text, fontSize: 15 },
+  inputError: { borderColor: colors.coral },
   contactShareRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, borderTopWidth: 1, borderTopColor: colors.line },
   contactShareLabel: { flex: 1, color: colors.text, fontSize: 14 },
   formError: { color: colors.coral, fontSize: 14, marginTop: 5 },

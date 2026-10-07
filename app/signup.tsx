@@ -5,6 +5,7 @@ import { Link, router } from 'expo-router';
 import { Screen } from '../components/ui';
 import { colors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
+import { validateEmail, validatePhone } from '../utils/formValidation';
 
 export default function Signup() {
   const { signup, signupAnonymously } = useApp();
@@ -14,14 +15,17 @@ export default function Signup() {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   const submit = async () => {
     const next: Record<string, string> = {};
-    if (!email.trim()) next.email = 'University email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email.';
-    if (password.length < 8) next.password = 'Use at least 6 characters.';
-    if (password !== confirm) next.confirm = 'Passwords do not match.';
+    const emailError = validateEmail(email);
+    const phoneError = validatePhone(phone, false);
+    if (emailError) next.email = emailError;
+    if (password.length < 8) next.password = 'Use at least 8 characters.';
+    if (!password) next.password = 'Password is required.';
+    if (confirm !== password) next.confirm = 'Passwords do not match.';
+    if (phoneError) next.phone = phoneError;
     if (Object.keys(next).length) {
       setErrors(next);
       return;
@@ -65,7 +69,10 @@ export default function Signup() {
                   placeholderTextColor="#A8BBB6"
                   style={styles.input}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    setErrors((current) => ({ ...current, email: validateEmail(value), form: undefined }));
+                  }}
                 />
               </View>
               {errors.email ? <Text style={styles.error}>{errors.email}</Text> : (
@@ -84,7 +91,19 @@ export default function Signup() {
                   secureTextEntry={!showPassword}
                   style={styles.input}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    setErrors((current) => ({
+                      ...current,
+                      password: !value
+                        ? 'Password is required.'
+                        : value.length < 8
+                          ? 'Use at least 8 characters.'
+                          : undefined,
+                      confirm: confirm && confirm !== value ? 'Passwords do not match.' : undefined,
+                      form: undefined,
+                    }));
+                  }}
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={17} color={colors.muted} />
@@ -104,7 +123,14 @@ export default function Signup() {
                   secureTextEntry={!showConfirm}
                   style={styles.input}
                   value={confirm}
-                  onChangeText={setConfirm}
+                  onChangeText={(value) => {
+                    setConfirm(value);
+                    setErrors((current) => ({
+                      ...current,
+                      confirm: value !== password ? 'Passwords do not match.' : undefined,
+                      form: undefined,
+                    }));
+                  }}
                 />
                 {confirm.length > 0 && confirm === password ? (
                   <Ionicons name="checkmark-circle-outline" size={17} color={colors.teal} />
@@ -122,18 +148,28 @@ export default function Signup() {
                 <Text style={styles.label}>PHONE NUMBER</Text>
                 <Text style={styles.optional}>Optional · Confidential SMS</Text>
               </View>
-              <View style={styles.inputWrap}>
+              <View style={[styles.inputWrap, errors.phone ? styles.inputError : null]}>
                 <Ionicons name="call-outline" size={16} color={colors.muted} />
                 <TextInput
                   autoComplete="tel"
-                  keyboardType="phone-pad"
-                  placeholder="(555) 123-4567"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="10-digit phone number"
                   placeholderTextColor="#A8BBB6"
                   style={styles.input}
                   value={phone}
-                  onChangeText={setPhone}
+                  onKeyPress={(event) => {
+                    const { key } = event.nativeEvent;
+                    if (key.length === 1 && !/^\d$/.test(key)) event.preventDefault();
+                  }}
+                  onChangeText={(value) => {
+                    const digits = value.replace(/\D/g, '').slice(0, 10);
+                    setPhone(digits);
+                    setErrors((current) => ({ ...current, phone: validatePhone(digits, false), form: undefined }));
+                  }}
                 />
               </View>
+              {errors.phone ? <Text style={styles.error}>{errors.phone}</Text> : null}
             </View>
           </View>
 

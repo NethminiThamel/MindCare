@@ -251,6 +251,10 @@ export function Avatar({
     (profileType === "counselor"
       ? counselorImage
       : studentImage);
+  const showPhoto =
+    profileType === "counselor" ||
+    Boolean(customProfileImage) ||
+    Boolean(selectedStudentOption && selectedStudentOption.id !== "default");
 
   return (
     <View
@@ -264,12 +268,12 @@ export function Avatar({
         justifyContent: "center",
       }}
     >
-      {profileType ? (
+      {showPhoto ? (
         <Image
           source={photoSource}
           style={{ width: size, height: size }}
           contentFit="cover"
-          accessibilityLabel={`${profileType} profile picture`}
+          accessibilityLabel={`${profileType ?? "student"} profile picture`}
         />
       ) : (
         <Text
