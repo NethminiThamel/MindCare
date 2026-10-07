@@ -1,154 +1,184 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
   TextInput,
   View,
-} from "react-native";
-import { Avatar, Screen } from "../../../components/ui";
-import { colors } from "../../../constants/theme";
-import { useApp } from "../../../context/AppContext";
+} from 'react-native';
+import { Avatar, BackHeader, Card, Screen } from '../../../components/ui';
+import { colors } from '../../../constants/theme';
+import { useApp } from '../../../context/AppContext';
+import { validateEmail, validatePhone, validateRequiredName } from '../../../utils/formValidation';
 
 export default function EditTrustedContact() {
-  const { id, returnTo } = useLocalSearchParams<{
-    id: string;
-    returnTo?: string;
-  }>();
-  const { currentUser, state, updateContact, deleteContact } = useApp();
+  const { id, returnTo } = useLocalSearchParams<{ id: string; returnTo?: string }>();
+  const { currentUser, ready, state, updateContact, deleteContact } = useApp();
   const contact = state.contacts.find(
     (item) => item.id === id && item.userId === currentUser?.id,
   );
-  const [name, setName] = useState(contact?.name ?? "");
-  const [relation, setRelation] = useState(contact?.relation ?? "");
-  const [phone, setPhone] = useState(contact?.phone ?? "");
-  const [email, setEmail] = useState(contact?.email ?? "");
+  const [name, setName] = useState(contact?.name ?? '');
+  const [relation, setRelation] = useState(contact?.relation ?? '');
+  const [phone, setPhone] = useState(contact?.phone.replace(/\D/g, '').slice(0, 10) ?? '');
+  const [email, setEmail] = useState(contact?.email ?? '');
   const [shareEmergencyStatus, setShareEmergencyStatus] = useState(
     contact?.shareEmergencyStatus ?? false,
   );
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
+  const destination = returnTo === '/(tabs)/profile' || returnTo === '/(tabs)/sos'
+    ? returnTo
+    : '/(tabs)';
+  const returnToContacts = () => router.replace({
+    pathname: '/trusted-contacts',
+    params: { returnTo: destination },
+  });
+
+  if (!ready) {
+    return (
+      <Screen>
+        <BackHeader title="Trusted Contact" onBack={returnToContacts} />
+        <Text style={styles.message}>Loading your trusted contact...</Text>
+      </Screen>
+    );
+  }
 
   if (!contact) {
     return (
       <Screen>
-        <Text style={styles.notFound}>Trusted contact not found.</Text>
+        <BackHeader title="Trusted Contact" onBack={returnToContacts} />
+        <Text style={styles.message}>Trusted contact not found.</Text>
       </Screen>
     );
   }
 
   const save = () => {
-    if (!name.trim() || !phone.trim()) {
-      setFormError("Enter a contact name and phone number.");
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
+    const cleanEmail = email.trim();
+    const next = {
+      name: validateRequiredName(name),
+      phone: validatePhone(phone),
+      email: validateEmail(email, false),
+    };
+    if (Object.values(next).some(Boolean)) {
+      setErrors(next);
       return;
     }
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setFormError("Enter a valid email address or leave it blank.");
-      return;
-    }
-    setFormError("");
     updateContact(contact.id, {
-      name: name.trim(),
-      relation: relation.trim() || "Support person",
-      phone: phone.trim(),
-      email: email.trim() || undefined,
+      name: cleanName,
+      relation: relation.trim() || 'Support person',
+      phone: cleanPhone,
+      email: cleanEmail || undefined,
       shareEmergencyStatus,
     });
     router.replace({
-      pathname: "/done",
-      params: { flow: "trusted-contact", contactId: contact.id },
+      pathname: '/done',
+      params: { flow: 'trusted-contact', contactId: contact.id, returnTo: destination },
     });
   };
 
   return (
-    <Screen padded={false}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.back}
-            accessibilityRole="button"
-          >
-            <Ionicons name="chevron-back" size={16} color={colors.tealDark} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-          <Avatar
-            name={currentUser?.name ?? "Student"}
-            color={currentUser?.avatarColor ?? colors.teal}
-            size={30}
-            profileType="student"
-            profileImage={currentUser?.profileImage}
-          />
-        </View>
-        <Text style={styles.title}>My Trusted Contact</Text>
-        <Text style={styles.subtitle}>
-          In case of a severe crisis, we can notify this person if you give us
-          consent.
-        </Text>
-
-        <View style={styles.formCard}>
-          <ContactField
-            label="CONTACT NAME"
-            value={name}
-            onChangeText={setName}
-            placeholder="Contact Name"
-          />
-          <ContactField
-            label="RELATIONSHIP"
-            value={relation}
-            onChangeText={setRelation}
-            placeholder="Relationship e.g., Parent..."
-          />
-          <ContactField
-            label="PHONE NUMBER"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Phone Number"
-            keyboardType="phone-pad"
-          />
-          <ContactField
-            label="EMAIL ADDRESS"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email Address"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          {formError ? (
-            <Text style={styles.formError} accessibilityRole="alert">
-              {formError}
-            </Text>
-          ) : null}
-          <Pressable
-            onPress={save}
-            style={({ pressed }) => [
-              styles.saveButton,
-              pressed && styles.pressed,
-            ]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.saveText}>Submit &amp; Save</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.emergencyStatusCard}>
-          <View style={styles.emergencyStatusTextWrap}>
-            <Text style={styles.emergencyStatusTitle}>Share Emergency</Text>
-            <Text style={styles.emergencyStatusTitle}>Status</Text>
+    <Screen scroll={false} padded={false}>
+      <View style={styles.page}>
+        <BackHeader title="Trusted Contact" onBack={returnToContacts} />
+        <View style={styles.profile}>
+          <Avatar name={contact.name} color={colors.teal} size={52} />
+          <View style={styles.profileCopy}>
+            <Text style={styles.title}>Edit trusted contact</Text>
+            <Text style={styles.subtitle}>Keep your crisis support details up to date.</Text>
           </View>
-          <Switch
-            value={shareEmergencyStatus}
-            onValueChange={setShareEmergencyStatus}
-            trackColor={{ false: "#DDE6E4", true: "#4E9B8E" }}
-            thumbColor="#F7F9F8"
-            ios_backgroundColor="#DDE6E4"
-          />
         </View>
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Card style={styles.card}>
+            <ContactField
+              label="CONTACT NAME"
+              value={name}
+              onChangeText={(value) => {
+                setName(value);
+                setErrors((current) => ({ ...current, name: validateRequiredName(value) }));
+              }}
+              error={errors.name}
+              placeholder="Contact name"
+              autoCapitalize="words"
+            />
+            <ContactField
+              label="RELATIONSHIP"
+              value={relation}
+              onChangeText={setRelation}
+              placeholder="Parent, sibling, friend..."
+              autoCapitalize="words"
+            />
+            <ContactField
+              label="PHONE NUMBER"
+              value={phone}
+              onChangeText={(value) => {
+                const digits = value.replace(/\D/g, '').slice(0, 10);
+                setPhone(digits);
+                setErrors((current) => ({ ...current, phone: validatePhone(digits) }));
+              }}
+              error={errors.phone}
+              placeholder="10-digit phone number"
+              inputMode="numeric"
+              maxLength={10}
+              onKeyPress={(event) => {
+                const { key } = event.nativeEvent;
+                if (key.length === 1 && !/^\d$/.test(key)) event.preventDefault();
+              }}
+            />
+            <ContactField
+              label="EMAIL ADDRESS"
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value);
+                setErrors((current) => ({ ...current, email: validateEmail(value, false) }));
+              }}
+              error={errors.email}
+              placeholder="Email address (optional)"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.shareRow}>
+              <Text style={styles.shareLabel}>Share emergency status with this contact</Text>
+              <Switch
+                value={shareEmergencyStatus}
+                onValueChange={setShareEmergencyStatus}
+                trackColor={{ false: colors.line, true: '#5BA48F' }}
+                thumbColor={colors.white}
+              />
+            </View>
+            <Pressable
+              onPress={save}
+              style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.saveText}>Save Changes</Text>
+            </Pressable>
+          </Card>
+
+          <Pressable
+            onPress={() => setConfirmDeleteVisible(true)}
+            style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${contact.name}`}
+          >
+            <Ionicons name="trash-outline" size={17} color={colors.coral} />
+            <Text style={styles.deleteText}>Delete trusted contact</Text>
+          </Pressable>
+        </ScrollView>
       </View>
+
       <Modal
         transparent
         visible={confirmDeleteVisible}
@@ -158,9 +188,7 @@ export default function EditTrustedContact() {
         <View style={styles.modalOverlay}>
           <View style={styles.confirmDialog}>
             <Text style={styles.confirmTitle}>Delete trusted contact?</Text>
-            <Text style={styles.confirmBody}>
-              Remove {contact.name} from your safety contacts?
-            </Text>
+            <Text style={styles.confirmBody}>Remove {contact.name} from your safety contacts?</Text>
             <View style={styles.confirmActions}>
               <Pressable
                 onPress={() => setConfirmDeleteVisible(false)}
@@ -173,16 +201,7 @@ export default function EditTrustedContact() {
                 onPress={() => {
                   deleteContact(contact.id);
                   setConfirmDeleteVisible(false);
-                  router.replace({
-                    pathname: "/trusted-contacts",
-                    params: {
-                      returnTo:
-                        returnTo === "/(tabs)/profile" ||
-                        returnTo === "/(tabs)/sos"
-                          ? returnTo
-                          : "/(tabs)",
-                    },
-                  });
+                  returnToContacts();
                 }}
                 style={styles.confirmDeleteButton}
                 accessibilityRole="button"
@@ -199,156 +218,107 @@ export default function EditTrustedContact() {
 
 function ContactField({
   label,
+  error,
   ...props
-}: React.ComponentProps<typeof TextInput> & { label: string }) {
+}: React.ComponentProps<typeof TextInput> & { label: string; error?: string }) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         {...props}
-        placeholderTextColor="#72847E"
-        style={styles.input}
+        placeholderTextColor={colors.muted}
+        style={[styles.input, error ? styles.inputError : null]}
+        accessibilityHint={error}
       />
+      {error ? <Text style={styles.formError} accessibilityRole="alert">{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 20,
-    backgroundColor: "#F4F5F1",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  back: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 3,
-    paddingRight: 10,
-  },
-  backText: { color: colors.tealDark, fontSize: 14 },
-  title: {
-    color: "#3F7E74",
-    fontSize: 42,
-    lineHeight: 44,
-    fontWeight: "700",
-    letterSpacing: -1.5,
-  },
-  subtitle: {
-    color: "#71847E",
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 8,
-    marginBottom: 18,
-    maxWidth: 300,
-  },
-  formCard: {
-    gap: 10,
-    paddingTop: 10,
-    paddingHorizontal: 0,
-  },
-  fieldGroup: { gap: 8 },
-  fieldLabel: {
-    color: "#5E7C76",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    marginLeft: 2,
-  },
+  page: { flex: 1, paddingHorizontal: 20, paddingTop: 8 },
+  profile: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  profileCopy: { flex: 1, gap: 4 },
+  title: { color: colors.text, fontSize: 19, fontWeight: '700' },
+  subtitle: { color: colors.muted, fontSize: 13, lineHeight: 17 },
+  scrollContent: { gap: 12, paddingBottom: 28 },
+  card: { gap: 8, padding: 15, borderRadius: 18 },
+  fieldGroup: { gap: 5, marginTop: 6 },
+  fieldLabel: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   input: {
-    minHeight: 48,
-    paddingHorizontal: 14,
+    minHeight: 46,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#E6EFEA",
+    borderColor: colors.line,
     borderRadius: 12,
-    backgroundColor: "#EEF1EF",
+    backgroundColor: '#F6F9F8',
     color: colors.text,
     fontSize: 15,
   },
-  formError: { color: colors.coral, fontSize: 11, marginTop: 4 },
+  inputError: { borderColor: colors.coral },
+  shareRow: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    marginTop: 4,
+  },
+  shareLabel: { flex: 1, color: colors.text, fontSize: 14 },
+  formError: { color: colors.coral, fontSize: 14, marginTop: 2 },
   saveButton: {
-    minHeight: 52,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    backgroundColor: "#5A9A8E",
-    marginTop: 8,
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    borderRadius: 23,
+    backgroundColor: '#5BA48F',
   },
-  saveText: { color: colors.white, fontSize: 18, fontWeight: "700" },
-  pressed: { opacity: 0.8 },
-  emergencyStatusCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#F4F5F3",
-    borderRadius: 18,
+  saveText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  deleteButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     borderWidth: 1,
-    borderColor: "#EAEFEA",
-    paddingHorizontal: 14,
-    paddingVertical: 16,
-    marginTop: 22,
-    minHeight: 80,
-  },
-  emergencyStatusTextWrap: {
-    maxWidth: 140,
-  },
-  emergencyStatusTitle: {
-    color: "#3D6A63",
-    fontSize: 18,
-    fontWeight: "700",
-    lineHeight: 26,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    backgroundColor: "rgba(17, 39, 34, 0.35)",
-  },
-  confirmDialog: {
-    padding: 16,
-    borderRadius: 12,
+    borderColor: '#F1D6D1',
+    borderRadius: 23,
     backgroundColor: colors.white,
   },
-  confirmTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  confirmBody: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 15,
-    marginTop: 6,
+  deleteText: { color: colors.coral, fontSize: 14, fontWeight: '600' },
+  pressed: { opacity: 0.8 },
+  message: { color: colors.muted, fontSize: 14, marginTop: 12 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(17, 39, 34, 0.35)',
   },
-  confirmActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 14,
-  },
+  confirmDialog: { padding: 18, borderRadius: 16, backgroundColor: colors.white },
+  confirmTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  confirmBody: { color: colors.muted, fontSize: 15, lineHeight: 19, marginTop: 7 },
+  confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
   keepButton: {
-    minWidth: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: 18,
+    borderRadius: 20,
   },
-  keepText: { color: colors.tealDark, fontSize: 12, fontWeight: "600" },
+  keepText: { color: colors.tealDark, fontSize: 15, fontWeight: '600' },
   confirmDeleteButton: {
-    minWidth: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
     backgroundColor: colors.coral,
   },
-  confirmDeleteText: { color: colors.white, fontSize: 12, fontWeight: "600" },
-  notFound: { color: colors.text, fontSize: 14 },
+  confirmDeleteText: { color: colors.white, fontSize: 15, fontWeight: '600' },
 });

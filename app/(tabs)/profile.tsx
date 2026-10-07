@@ -24,7 +24,7 @@ export default function ProfileTab() {
         nextImage ? "Profile photo updated" : "Profile photo cleared",
         nextImage
           ? "Your new profile picture has been saved."
-          : "Your profile picture has been reset to default.",
+          : "Your initials are now shown instead of a profile picture.",
       );
     } catch (error) {
       Alert.alert(
@@ -103,7 +103,7 @@ export default function ProfileTab() {
                 onPress={() => {
                   Alert.alert(
                     "Add or update your profile photo",
-                    "Choose a photo from your library or reset to the default.",
+                    "Choose a photo from your library, or use your initials instead.",
                     [
                       {
                         text: "Choose photo",
@@ -112,7 +112,7 @@ export default function ProfileTab() {
                         },
                       },
                       {
-                        text: "Use default photo",
+                        text: "Use initials",
                         onPress: () => {
                           void handleProfilePhotoUpdate(undefined);
                         },
@@ -138,7 +138,7 @@ export default function ProfileTab() {
                   </View>
                 </View>
               </Pressable>
-              <Text style={styles.avatarHint}>Add/update photo</Text>
+              <Text style={styles.avatarHint}>Add photo (optional)</Text>
             </View>
             <View style={styles.identity}>
               <View style={styles.nameRow}>
