@@ -1,14 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { Avatar, Screen } from "../../components/ui";
 import { colors, type MoodKey } from "../../constants/theme";
@@ -25,11 +25,16 @@ const checkinMoods: { key: MoodKey; label: string; emoji: string }[] = [
 
 export default function CheckIn() {
   const { currentUser, state, addMood, deleteMood } = useApp();
-  const { mood: moodParam } = useLocalSearchParams<{ mood?: string }>();
-  const mood = moodFromRoute(moodParam) ?? "okay";
+  const [mood, setMood] = useState<MoodKey>();
   const [stress, setStress] = useState(4);
   const [note, setNote] = useState("");
+  const [moodError, setMoodError] = useState<string | null>(null);
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      setMoodError(null);
+    }, []),
+  );
   const entries = currentUser ? moodsByUser(state.moods, currentUser.id) : [];
   const deleteEntry = entries.find((entry) => entry.id === deleteEntryId);
   const today = new Date();
@@ -52,7 +57,12 @@ export default function CheckIn() {
   const [sliderWidth, setSliderWidth] = useState(1);
 
   const submit = () => {
+    if (!mood) {
+      setMoodError("Please choose a mood before submitting your check-in.");
+      return;
+    }
     addMood({ mood, stressLevel: stress, note: note.trim() });
+    setMood(undefined);
     setNote("");
     router.push("/(tabs)/moods");
   };
@@ -96,7 +106,10 @@ export default function CheckIn() {
             return (
               <Pressable
                 key={option.key}
-                onPress={() => router.setParams({ mood: option.key })}
+                onPress={() => {
+                  setMoodError(null);
+                  setMood(option.key);
+                }}
                 style={[styles.moodOption, selected && styles.moodSelected]}
                 accessibilityRole="button"
                 accessibilityLabel={`Mood: ${option.label}`}
@@ -115,6 +128,11 @@ export default function CheckIn() {
             );
           })}
         </View>
+        {moodError ? (
+          <Text style={styles.moodError} accessibilityRole="alert">
+            {moodError}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.stressHeading}>
@@ -305,13 +323,6 @@ export default function CheckIn() {
   );
 }
 
-function moodFromRoute(moodParam?: string) {
-  return (
-    checkinMoods.find((option) => option.key === moodParam)?.key ??
-    (moodParam === "anxious" ? "stressed" : undefined)
-  );
-}
-
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
@@ -364,6 +375,7 @@ const styles = StyleSheet.create({
   moodEmoji: { fontSize: 22 },
   moodLabel: { color: colors.muted, fontSize: 12, textAlign: "center" },
   moodLabelSelected: { color: "#397E72" },
+  moodError: { color: colors.coral, fontSize: 13, marginTop: 8 },
   stressHeading: {
     flexDirection: "row",
     alignItems: "center",

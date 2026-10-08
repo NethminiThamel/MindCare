@@ -131,12 +131,7 @@ export default function Dashboard() {
           {homeMoods.map((mood) => (
             <Pressable
               key={mood.key}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/checkin",
-                  params: { mood: mood.key },
-                })
-              }
+              onPress={() => router.push("/(tabs)/checkin")}
               style={styles.moodChoice}
               accessibilityRole="button"
               accessibilityLabel={`Check in as ${homeMoodLabels[mood.key] ?? mood.label}`}
