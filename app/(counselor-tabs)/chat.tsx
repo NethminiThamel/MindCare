@@ -5,7 +5,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { Card, Screen } from '../../components/ui';
 import { colors } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
-import { studentDisplayName } from '../../lib/student-privacy';
+import { studentAnonymousTag, studentDisplayName } from '../../lib/student-privacy';
 
 export default function CounselorChatList() {
   const { currentUser, state } = useApp();
@@ -86,7 +86,7 @@ export default function CounselorChatList() {
               >
                 <View style={styles.chatCard}>
                   <View style={[styles.avatar, { backgroundColor: isAnonymous ? '#EEF2F0' : student?.avatarColor ?? colors.teal }]}>
-                    <Text style={[styles.avatarText, isAnonymous && styles.avatarTextAnon]}>{isAnonymous ? '#72' : name.split(' ').slice(0, 2).map((part) => part[0]).join('')}</Text>
+                    <Text style={[styles.avatarText, isAnonymous && styles.avatarTextAnon]}>{isAnonymous ? studentAnonymousTag(student) ?? 'AS' : name.split(' ').slice(0, 2).map((part) => part[0]).join('')}</Text>
                   </View>
 
                   <View style={styles.chatContent}>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   chatCard: { minHeight: 78, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  avatarTextAnon: { color: colors.tealDark },
+  avatarTextAnon: { color: colors.tealDark, fontSize: 11 },
   chatContent: { flex: 1, minWidth: 0 },
   chatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   name: { fontSize: 14, fontWeight: '700', color: '#397E72' },

@@ -9,13 +9,20 @@ export function isStudentAnonymous(
   return appointmentIsAnonymous || Boolean(student?.isAnonymous);
 }
 
+export function studentAnonymousTag(
+  student: Pick<User, 'id'> | null | undefined
+) {
+  return student?.id ? `#${student.id.slice(-4).toUpperCase()}` : undefined;
+}
+
 export function studentDisplayName(
   student: Pick<User, 'id' | 'name' | 'isAnonymous'> | null | undefined,
   appointmentIsAnonymous = false
 ) {
-  return isStudentAnonymous(student, appointmentIsAnonymous)
-    ? student?.id
-      ? `${ANONYMOUS_STUDENT_NAME} #${student.id.slice(-4).toUpperCase()}`
-      : ANONYMOUS_STUDENT_NAME
-    : student?.name ?? 'Student';
+  if (!isStudentAnonymous(student, appointmentIsAnonymous)) {
+    return student?.name ?? 'Student';
+  }
+
+  const anonymousTag = studentAnonymousTag(student);
+  return `${ANONYMOUS_STUDENT_NAME}${anonymousTag ? ` ${anonymousTag}` : ''}`;
 }

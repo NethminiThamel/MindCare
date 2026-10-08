@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -25,12 +25,16 @@ const checkinMoods: { key: MoodKey; label: string; emoji: string }[] = [
 
 export default function CheckIn() {
   const { currentUser, state, addMood, deleteMood } = useApp();
-  const { mood: moodParam } = useLocalSearchParams<{ mood?: string }>();
-  const mood = moodFromRoute(moodParam);
+  const [mood, setMood] = useState<MoodKey>();
   const [stress, setStress] = useState(4);
   const [note, setNote] = useState("");
   const [moodError, setMoodError] = useState<string | null>(null);
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      setMoodError(null);
+    }, []),
+  );
   const entries = currentUser ? moodsByUser(state.moods, currentUser.id) : [];
   const deleteEntry = entries.find((entry) => entry.id === deleteEntryId);
   const today = new Date();
@@ -58,6 +62,7 @@ export default function CheckIn() {
       return;
     }
     addMood({ mood, stressLevel: stress, note: note.trim() });
+    setMood(undefined);
     setNote("");
     router.push("/(tabs)/moods");
   };
@@ -103,7 +108,7 @@ export default function CheckIn() {
                 key={option.key}
                 onPress={() => {
                   setMoodError(null);
-                  router.setParams({ mood: option.key });
+                  setMood(option.key);
                 }}
                 style={[styles.moodOption, selected && styles.moodSelected]}
                 accessibilityRole="button"
@@ -315,13 +320,6 @@ export default function CheckIn() {
         </View>
       </Modal>
     </Screen>
-  );
-}
-
-function moodFromRoute(moodParam?: string) {
-  return (
-    checkinMoods.find((option) => option.key === moodParam)?.key ??
-    (moodParam === "anxious" ? "stressed" : undefined)
   );
 }
 
