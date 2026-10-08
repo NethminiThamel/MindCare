@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
 import {
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -167,24 +168,6 @@ export function Field({
   );
 }
 
-export const studentAvatarOptions = [
-  {
-    id: "default",
-    label: "Default student",
-    source: require("../assets/images/student-profile.jpg"),
-  },
-  {
-    id: "classic",
-    label: "Classic",
-    source: require("../assets/images/student-profile.jpg"),
-  },
-  {
-    id: "clean",
-    label: "Clean look",
-    source: require("../assets/images/student-profile.jpg"),
-  },
-] as const;
-
 export function Avatar({
   name,
   color,
@@ -206,55 +189,25 @@ export function Avatar({
     .join("")
     .toUpperCase();
 
-  const counselorImages = [
-    require("../assets/images/counselor1.jpg"),
-    require("../assets/images/counselor2.jpg"),
-    require("../assets/images/counselor3.jpg"),
-    require("../assets/images/counselor-profile.jpg"),
-  ];
-  const counselorImagesByName: Record<string, number> = {
-    "jordan lee": counselorImages[0],
-    "sarah patel": counselorImages[1],
-    dilrukshika: counselorImages[2],
-    "anne fernando": counselorImages[3],
-  };
-  const counselorImageHash = [...name.toLowerCase()].reduce(
-    (hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619),
-    2166136261,
-  ) >>> 0;
-  const counselorImage =
-    counselorImagesByName[name.trim().toLowerCase()] ??
-    counselorImages[counselorImageHash % counselorImages.length];
-
-  const selectedStudentOption = studentAvatarOptions.find(
-    (option) => option.id === profileImage,
-  );
   const customProfileImage =
     typeof profileImage === "string" &&
     profileImage.trim().length > 0 &&
-    profileImage !== "default" &&
-    !selectedStudentOption &&
-    (profileImage.startsWith("file://") ||
-      profileImage.startsWith("content://") ||
+    ((Platform.OS !== "web" &&
+      (profileImage.startsWith("file://") ||
+        profileImage.startsWith("content://"))) ||
       profileImage.startsWith("blob:") ||
       profileImage.startsWith("data:") ||
       profileImage.startsWith("http://") ||
       profileImage.startsWith("https://"))
       ? { uri: profileImage }
       : undefined;
+  const [failedProfileImage, setFailedProfileImage] = React.useState<
+    string | null
+  >(null);
 
-  const studentImage =
-    selectedStudentOption?.source ?? studentAvatarOptions[0].source;
-
-  const photoSource =
-    customProfileImage ??
-    (profileType === "counselor"
-      ? counselorImage
-      : studentImage);
-  const showPhoto =
-    profileType === "counselor" ||
-    Boolean(customProfileImage) ||
-    Boolean(selectedStudentOption && selectedStudentOption.id !== "default");
+  const useCustomProfileImage =
+    Boolean(customProfileImage) && failedProfileImage !== profileImage;
+  const showPhoto = useCustomProfileImage;
 
   return (
     <View
@@ -263,16 +216,22 @@ export function Avatar({
         height: size,
         borderRadius: size / 2,
         overflow: "hidden",
-        backgroundColor: color,
+        backgroundColor:
+          profileType === "counselor" ? colors.teal : color || colors.teal,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
       {showPhoto ? (
         <Image
-          source={photoSource}
+          source={customProfileImage}
           style={{ width: size, height: size }}
           contentFit="cover"
+          onError={() => {
+            if (customProfileImage && profileImage) {
+              setFailedProfileImage(profileImage);
+            }
+          }}
           accessibilityLabel={`${profileType ?? "student"} profile picture`}
         />
       ) : (

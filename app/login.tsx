@@ -59,7 +59,7 @@ export default function Login() {
           <View style={styles.fieldGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>UNIVERSITY EMAIL</Text>
-              <Text style={styles.fieldHint}>Campus account</Text>
+              <Text style={styles.fieldHint}>Student Verified</Text>
             </View>
             <View style={[styles.inputWrap, errors.email ? styles.inputError : null]}>
               <Ionicons name="school-outline" size={17} color={colors.muted} />

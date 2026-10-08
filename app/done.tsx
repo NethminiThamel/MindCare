@@ -134,7 +134,7 @@ export default function Done() {
             <View style={styles.savedDot} />
             <Text style={styles.savedText}>Request saved to Firebase</Text>
           </View>
-          <Pressable onPress={() => router.replace('/sessions?tab=upcoming')} style={styles.flowAction} accessibilityRole="button">
+          <Pressable onPress={() => router.replace('/(tabs)/sessions?tab=upcoming')} style={styles.flowAction} accessibilityRole="button">
             <Text style={styles.flowActionText}>Back to My Sessions</Text>
           </Pressable>
         </View>
@@ -159,11 +159,11 @@ export default function Done() {
               </View>
               <View style={styles.footerItem}>
                 <Ionicons name="checkmark-circle-outline" size={10} color={colors.tealDark} />
-                <Text style={styles.footerText}>Reschedule anytime</Text>
+                <Text style={styles.footerText}>Back to My Sessions</Text>
               </View>
             </View>
           </View>
-          <Pressable onPress={() => router.replace('/sessions?tab=upcoming')} style={styles.flowAction} accessibilityRole="button">
+          <Pressable onPress={() => router.replace('/(tabs)/sessions?tab=upcoming')} style={styles.flowAction} accessibilityRole="button">
             <Text style={styles.flowActionText}>Back to My Sessions</Text>
           </Pressable>
         </View>

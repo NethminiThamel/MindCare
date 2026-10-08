@@ -21,10 +21,7 @@ const sessionTypes: {
 ];
 
 export default function Booking() {
-  const { id, time: timeParam } = useLocalSearchParams<{
-    id: string;
-    time?: string;
-  }>();
+  const { id, time: timeParam } = useLocalSearchParams<{ id: string; time?: string }>();
   const { currentUser, ready, state, bookAppointment } = useApp();
   const counselor = state.counselors.find((item) => item.id === id);
   const availability = state.availabilities?.find(
@@ -36,15 +33,18 @@ export default function Booking() {
     const current = new Date();
     return new Date(current.getFullYear(), current.getMonth(), 1);
   });
-  const [date, setDate] = useState(() => {
-    const nextDay = new Date();
-    nextDay.setDate(nextDay.getDate() + 1);
-    return toDateKey(nextDay);
-  });
+  const [date, setDate] = useState("");
   const [selectedTime, setSelectedTime] = useState(timeParam ?? "");
-  const [type, setType] = useState<AppointmentType>("video");
+  const [type, setType] = useState<AppointmentType | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [conflictedSlots, setConflictedSlots] = useState<string[]>([]);
+  const [selectionErrors, setSelectionErrors] = useState<{
+    date?: string;
+    time?: string;
+    type?: string;
+    availability?: string;
+  }>({});
   const activeFormat = availability?.sessionFormats?.find(
     (format) => format.enabled,
   )?.key;
@@ -57,18 +57,20 @@ export default function Booking() {
           ? 50
           : 0;
   const deliveryMethods = availability?.deliveryMethods ?? [];
-  const selectedType = deliveryMethods.includes(type)
-    ? type
-    : deliveryMethods[0];
-  const times = getAvailabilityTimes(availability, date, durationMin);
-  const time = times.includes(selectedTime) ? selectedTime : (times[0] ?? "");
+  const selectedType = type && deliveryMethods.includes(type) ? type : undefined;
+  const times = date
+    ? getAvailabilityTimes(availability, date, durationMin).filter(
+        (slot) => !conflictedSlots.includes(`${date}|${slot}`),
+      )
+    : [];
+  const time = times.includes(selectedTime) ? selectedTime : "";
   const calendarDays = buildCalendarDays(month);
   const calendarWeeks = Array.from(
     { length: calendarDays.length / 7 },
     (_, index) => calendarDays.slice(index * 7, index * 7 + 7),
   );
   const todayKey = toDateKey(today);
-  const selectedDay = new Date(`${date}T12:00:00`);
+  const selectedDay = date ? new Date(`${date}T12:00:00`) : null;
   const previousMonthDisabled =
     month.getFullYear() === today.getFullYear() &&
     month.getMonth() <= today.getMonth();
@@ -185,6 +187,12 @@ export default function Booking() {
                     onPress={() => {
                       setDate(dayKey);
                       setSelectedTime("");
+                      setBookingError(null);
+                      setSelectionErrors((current) => ({
+                        ...current,
+                        date: undefined,
+                        time: undefined,
+                      }));
                       if (!inMonth)
                         setMonth(
                           new Date(day.getFullYear(), day.getMonth(), 1),
@@ -238,20 +246,31 @@ export default function Booking() {
         <View style={styles.sectionHeading}>
           <Text style={styles.sectionLabel}>AVAILABLE TIMES</Text>
           <Text style={styles.selectedDate}>
-            {selectedDay.toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            })}
+            {selectedDay
+              ? selectedDay.toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Choose a date"}
           </Text>
         </View>
+        {selectionErrors.date ? (
+          <Text style={styles.selectionError} accessibilityRole="alert">
+            {selectionErrors.date}
+          </Text>
+        ) : null}
 
         <View style={styles.timeRow}>
           {times.map((slot) => {
-            const selected = time === slot;
+            const selected = selectedTime === slot;
             return (
               <Pressable
                 key={slot}
-                onPress={() => setSelectedTime(slot)}
+                onPress={() => {
+                  setSelectedTime(slot);
+                  setBookingError(null);
+                  setSelectionErrors((current) => ({ ...current, time: undefined }));
+                }}
                 style={[styles.timeChip, selected && styles.selectedChip]}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -267,12 +286,19 @@ export default function Booking() {
           })}
           {!times.length ? (
             <Text style={styles.unavailableText}>
-              {availability?.isAcceptingSessions
+              {!date
+                ? "Choose a date to see available times."
+                : availability?.isAcceptingSessions
                 ? "No bookable times are published for this date."
                 : "This counselor has not published availability in Firebase."}
             </Text>
           ) : null}
         </View>
+        {selectionErrors.time ? (
+          <Text style={styles.selectionError} accessibilityRole="alert">
+            {selectionErrors.time}
+          </Text>
+        ) : null}
 
         <Text style={[styles.sectionLabel, styles.sessionTypeHeading]}>
           SESSION TYPE
@@ -285,7 +311,11 @@ export default function Booking() {
               return (
                 <Pressable
                   key={option.key}
-                  onPress={() => setType(option.key)}
+                  onPress={() => {
+                    setType(option.key);
+                    setBookingError(null);
+                    setSelectionErrors((current) => ({ ...current, type: undefined }));
+                  }}
                   style={[styles.formatChip, selected && styles.selectedChip]}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -299,14 +329,52 @@ export default function Booking() {
               );
             })}
         </View>
+        {selectionErrors.type ? (
+          <Text style={styles.selectionError} accessibilityRole="alert">
+            {selectionErrors.type}
+          </Text>
+        ) : null}
+        {selectionErrors.availability ? (
+          <Text style={styles.selectionError} accessibilityRole="alert">
+            {selectionErrors.availability}
+          </Text>
+        ) : null}
 
         {bookingError ? (
-          <Text style={styles.bookingError}>{bookingError}</Text>
+          <Text style={styles.bookingError} accessibilityRole="alert">
+            {bookingError}
+          </Text>
         ) : null}
 
         <Pressable
           onPress={() => {
-            if (!time || !selectedType || isSubmitting) return;
+            if (isSubmitting) return;
+            const errors = {
+              date: !date
+                ? "Choose an available date."
+                : times.length === 0
+                  ? "Choose a date with available appointment times."
+                  : undefined,
+              time: !time ? "Choose an available time." : undefined,
+              type: !selectedType
+                ? deliveryMethods.length
+                  ? "Choose a session type."
+                  : "No session types are currently available."
+                : undefined,
+              availability: durationMin === 0
+                ? "This counselor has not published an available session format."
+                : undefined,
+            };
+            setSelectionErrors(errors);
+            if (
+              Object.values(errors).some(Boolean) ||
+              !date ||
+              !time ||
+              !selectedType ||
+              durationMin === 0
+            ) {
+              return;
+            }
             setIsSubmitting(true);
             setBookingError(null);
             void bookAppointment({
@@ -324,19 +392,41 @@ export default function Booking() {
                 });
               })
               .catch((error: unknown) => {
-                setBookingError(
-                  error instanceof Error
-                    ? `Your appointment could not be saved to Firebase: ${error.message}`
-                    : "Your appointment could not be saved to Firebase. Please try again.",
-                );
+                const errorMessage =
+                  error instanceof Error ? error.message : "Please try again.";
+                const errorCode =
+                  typeof error === "object" && error !== null && "code" in error
+                    ? String(error.code).toLowerCase()
+                    : "";
+                const slotConflict =
+                  /slot.*(already booked|booked|unavailable)|already booked|booking conflict/i.test(
+                    errorMessage,
+                  ) || /already-exists|failed-precondition/.test(errorCode);
+
+                if (slotConflict) {
+                  setConflictedSlots((current) =>
+                    current.includes(`${date}|${time}`)
+                      ? current
+                      : [...current, `${date}|${time}`],
+                  );
+                  setSelectedTime("");
+                  setBookingError(
+                    "That time was just booked by someone else. Please choose another available time.",
+                  );
+                } else {
+                  setBookingError(
+                    error instanceof Error
+                      ? `Your appointment could not be saved: ${error.message}`
+                      : "Your appointment could not be saved. Please try again.",
+                  );
+                }
               })
               .finally(() => setIsSubmitting(false));
           }}
-          disabled={!time || !selectedType || durationMin === 0 || isSubmitting}
+          disabled={isSubmitting}
           style={({ pressed }) => [
             styles.bookButton,
-            (!time || !selectedType || durationMin === 0 || isSubmitting) &&
-              styles.disabledButton,
+            isSubmitting && styles.disabledButton,
             pressed && styles.pressed,
           ]}
           accessibilityRole="button"
@@ -442,6 +532,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: { color: "#687C76", fontSize: 12, fontWeight: "700", letterSpacing: 0.4 },
   selectedDate: { color: colors.muted, fontSize: 12 },
+  selectionError: { color: "#B42318", fontSize: 12, marginTop: 4 },
   timeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   unavailableText: { color: colors.muted, fontSize: 12, paddingVertical: 5 },
   timeChip: {

@@ -92,7 +92,7 @@ export default function CounselorProfile() {
             onPress={() => {
               Alert.alert(
                 "Add or update your profile photo",
-                "Choose a photo from your library or reset to the default.",
+                "Choose a photo from your library or use your initials.",
                 [
                   {
                     text: "Choose photo",
@@ -101,7 +101,7 @@ export default function CounselorProfile() {
                     },
                   },
                   {
-                    text: "Use default photo",
+                    text: "Use initials",
                     onPress: () => {
                       void handleProfilePhotoUpdate(undefined);
                     },
@@ -131,7 +131,7 @@ export default function CounselorProfile() {
               onPress={() => {
                 Alert.alert(
                   "Add or update your profile photo",
-                  "Choose a photo from your library or reset to the default.",
+                  "Choose a photo from your library or use your initials.",
                   [
                     {
                       text: "Choose photo",
@@ -140,7 +140,7 @@ export default function CounselorProfile() {
                       },
                     },
                     {
-                      text: "Use default photo",
+                      text: "Use initials",
                       onPress: () => {
                         void handleProfilePhotoUpdate(undefined);
                       },

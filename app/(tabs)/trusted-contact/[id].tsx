@@ -22,15 +22,6 @@ export default function EditTrustedContact() {
   const contact = state.contacts.find(
     (item) => item.id === id && item.userId === currentUser?.id,
   );
-  const [name, setName] = useState(contact?.name ?? '');
-  const [relation, setRelation] = useState(contact?.relation ?? '');
-  const [phone, setPhone] = useState(contact?.phone.replace(/\D/g, '').slice(0, 10) ?? '');
-  const [email, setEmail] = useState(contact?.email ?? '');
-  const [shareEmergencyStatus, setShareEmergencyStatus] = useState(
-    contact?.shareEmergencyStatus ?? false,
-  );
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
   const destination = returnTo === '/(tabs)/profile' || returnTo === '/(tabs)/sos'
     ? returnTo
     : '/(tabs)';
@@ -57,14 +48,54 @@ export default function EditTrustedContact() {
     );
   }
 
+  return (
+    <TrustedContactEditor
+      contact={contact}
+      destination={destination}
+      returnToContacts={returnToContacts}
+      updateContact={updateContact}
+      deleteContact={deleteContact}
+    />
+  );
+}
+
+function TrustedContactEditor({
+  contact,
+  destination,
+  returnToContacts,
+  updateContact,
+  deleteContact,
+}: {
+  contact: { id: string; name: string; relation: string; phone: string; email?: string; shareEmergencyStatus?: boolean };
+  destination: string;
+  returnToContacts: () => void;
+  updateContact: (id: string, patch: Partial<{
+    id: string;
+    userId: string;
+    name: string;
+    relation: string;
+    phone: string;
+    email?: string;
+    shareEmergencyStatus?: boolean;
+  }>) => void;
+  deleteContact: (id: string) => void;
+}) {
+  const [name, setName] = useState(contact.name ?? '');
+  const [relation, setRelation] = useState(contact.relation ?? '');
+  const [phone, setPhone] = useState(contact.phone ? contact.phone.replace(/\D/g, '').slice(0, 10) : '');
+  const [email, setEmail] = useState(contact.email ?? '');
+  const [shareEmergencyStatus, setShareEmergencyStatus] = useState(contact.shareEmergencyStatus ?? false);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
+
   const save = () => {
     const cleanName = name.trim();
     const cleanPhone = phone.trim();
     const cleanEmail = email.trim();
     const next = {
-      name: validateRequiredName(name),
-      phone: validatePhone(phone),
-      email: validateEmail(email, false),
+      name: validateRequiredName(cleanName),
+      phone: validatePhone(cleanPhone),
+      email: validateEmail(cleanEmail, false),
     };
     if (Object.values(next).some(Boolean)) {
       setErrors(next);
