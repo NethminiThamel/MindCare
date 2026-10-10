@@ -5,6 +5,16 @@ export const faqs = [
     a: 'No. If you are in immediate danger, call local emergency services or call or text 988 in the U.S. MindCare is a campus wellness companion, not an emergency service.',
   },
   {
+    category: 'Anonymous',
+    q: 'How does anonymous sign up work?',
+    a: 'On Create Account, enter your university email, password, and confirm password, then tap Continue Anonymously. MindCare still creates a real login so you can return later. Other people in the app see you as an anonymous student, not your name. Your email is used only to sign you in.',
+  },
+  {
+    category: 'Anonymous',
+    q: 'How do I log in after anonymous sign up?',
+    a: 'Use the same email and password on the Log In screen. Anonymous does not mean a guest session with no credentials. If you skip email and password, the account cannot be recovered later.',
+  },
+  {
     category: 'Privacy',
     q: 'Who can see my mood logs?',
     a: 'Your mood logs are stored in your Firebase account. You can control whether mood summaries are shared with your counselor in Privacy settings.',

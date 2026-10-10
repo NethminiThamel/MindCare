@@ -13,7 +13,6 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
-  signInAnonymously,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
@@ -53,8 +52,7 @@ type AppContextValue = {
     consentAccepted: boolean;
   }>;
   resetPassword: (email: string) => Promise<string | null>;
-  signup: (input: { name: string; email: string; password: string; phone?: string }) => Promise<string | null>;
-  signupAnonymously: () => Promise<void>;
+  signup: (input: { name: string; email: string; password: string; phone?: string; isAnonymous?: boolean }) => Promise<string | null>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   acceptConsent: () => Promise<void>;
@@ -305,7 +303,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return authErrorMessage(error);
         }
       },
-      signup: async ({ name, email, password, phone }) => {
+      signup: async ({ name, email, password, phone, isAnonymous }) => {
         let accountCreated = false;
         try {
           const credential = await createUserWithEmailAndPassword(
@@ -315,9 +313,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           );
           accountCreated = true;
           const profile = profileFromFirebase(credential.user, {
-            name: name.trim(),
+            name: isAnonymous ? 'Anonymous Student' : name.trim(),
             role: 'student',
             phone: phone?.trim() || undefined,
+            isAnonymous: Boolean(isAnonymous),
             avatarColor: '#F07178',
             consentAccepted: false,
             onboardingComplete: stateRef.current.introCompleted === true,
@@ -334,27 +333,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return accountCreated
             ? `Your Firebase account was created, but MindCare could not save its profile. Do not sign up again; after Firestore is set up, use Log In with this email. ${message}`
             : message;
-        }
-      },
-      signupAnonymously: async () => {
-        try {
-          const credential = await signInAnonymously(auth);
-          const profile = profileFromFirebase(credential.user, {
-            name: 'Anonymous Student',
-            role: 'student',
-            isAnonymous: true,
-            avatarColor: '#F07178',
-            consentAccepted: false,
-            onboardingComplete: stateRef.current.introCompleted === true,
-          });
-          await syncProfileVisibility(profile);
-          replaceState((prev) => ({
-            ...prev,
-            users: [...prev.users.filter((user) => user.id !== profile.id), profile],
-            currentUserId: profile.id,
-          }));
-        } catch (error) {
-          throw new Error(authErrorMessage(error));
         }
       },
       logout: async () => {
