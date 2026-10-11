@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext';
 import { validateEmail, validatePhone } from '../utils/formValidation';
 
 export default function Signup() {
-  const { signup, signupAnonymously } = useApp();
+  const { signup } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -17,7 +17,7 @@ export default function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
-  const submit = async () => {
+  const createAccount = async (isAnonymous: boolean) => {
     const next: Record<string, string> = {};
     const emailError = validateEmail(email);
     const phoneError = validatePhone(phone, false);
@@ -31,12 +31,16 @@ export default function Signup() {
       return;
     }
     const name = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-    const fail = await signup({ name, email, password, phone });
+    const fail = await signup({ name, email, password, phone, isAnonymous });
     if (fail) {
       setErrors({ form: fail });
       return;
     }
     router.replace('/account-created');
+  };
+
+  const submit = async () => {
+    await createAccount(false);
   };
 
   return (
@@ -186,23 +190,17 @@ export default function Signup() {
           </View>
 
           <Pressable
-            onPress={async () => {
-              try {
-                await signupAnonymously();
-                router.replace('/account-created');
-              } catch (error) {
-                setErrors({ form: error instanceof Error ? error.message : 'Could not create an anonymous account.' });
-              }
-            }}
+            onPress={() => void createAccount(true)}
             style={({ pressed }) => [styles.guestButton, pressed && styles.pressed]}
             accessibilityRole="button"
+            accessibilityLabel="Create an anonymous account with email and password"
           >
             <View style={styles.guestIcon}>
               <Ionicons name="shield-checkmark-outline" size={18} color={colors.tealDark} />
             </View>
             <View style={styles.guestCopy}>
               <Text style={styles.guestTitle}>Continue Anonymously</Text>
-              <Text style={styles.guestSub}>No email needed. Continue to the student experience privately.</Text>
+              <Text style={styles.guestSub}>Enter email and password above. Others will not see your identity. Use the same details to log in later.</Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.tealDark} />
           </Pressable>

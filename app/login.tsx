@@ -48,7 +48,7 @@ export default function Login() {
             accessibilityLabel="MindCare logo"
           />
           <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your confidential student sanctuary</Text>
+          <Text style={styles.subtitle}>Sign in with your email and password, including anonymous accounts</Text>
           <View style={styles.privacyPill}>
             <Ionicons name="lock-closed-outline" size={12} color={colors.tealDark} />
             <Text style={styles.privacyText}>End-to-end Encrypted. Campus Invisible</Text>

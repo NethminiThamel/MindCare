@@ -26,7 +26,7 @@ const privacyPoints: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = 
   },
   {
     icon: 'footsteps-outline',
-    text: 'Just Sign Up with Continue Anonymous and we will take care of the rest',
+    text: 'Create an anonymous account with email and password so you can log in again privately.',
   },
   { icon: 'mail-outline', text: 'You will be anonymous user to all others' },
 ];
