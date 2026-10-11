@@ -6,18 +6,28 @@ export const faqs = [
   },
   {
     category: 'Anonymous',
-    q: 'How does anonymous sign up work?',
-    a: 'On Create Account, enter your university email, password, and confirm password, then tap Continue Anonymously. MindCare still creates a real login so you can return later. Other people in the app see you as an anonymous student, not your name. Your email is used only to sign you in.',
+    q: 'What is the exact workflow for Anonymous Sign Up?',
+    a: '1. Go to the Create Account screen.\n2. Enter your university email address and secure password.\n3. Instead of regular registration, tap the "Continue Anonymously" button.\n4. MindCare creates a secure account in Firebase so your account remains recoverable, but your profile is automatically masked as "Anonymous Student" across all chats, bookings, and counselor sessions to protect your privacy.',
+  },
+  {
+    category: 'Anonymous',
+    q: 'Can anyone see my real name if I sign up anonymously?',
+    a: 'No. Counselors and other users will only ever see you listed as "Anonymous Student". Your real name and email address are kept strictly private and used solely for secure account authentication.',
+  },
+  {
+    category: 'Anonymous',
+    q: 'Why do I need to enter an email if I want to stay anonymous?',
+    a: 'Entering an email and password links your credentials to a secure Firebase account. This ensures you can safely log back into your session history, journal entries, and bookings on new devices or after app updates without losing your data.',
   },
   {
     category: 'Anonymous',
     q: 'How do I log in after anonymous sign up?',
-    a: 'Use the same email and password on the Log In screen. Anonymous does not mean a guest session with no credentials. If you skip email and password, the account cannot be recovered later.',
+    a: 'Use the same email and password on the Log In screen. Anonymous sign up does not mean an unrecoverable guest session; your credentials ensure your data stays secure and accessible only to you.',
   },
   {
     category: 'Privacy',
     q: 'Who can see my mood logs?',
-    a: 'Your mood logs are stored in your Firebase account. You can control whether mood summaries are shared with your counselor in Privacy settings.',
+    a: 'Your mood logs are stored securely in your Firebase account. You have full control in Privacy settings to choose whether or not mood summaries are shared with your counselor.',
   },
   {
     category: 'Privacy',
