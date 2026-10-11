@@ -43,14 +43,16 @@ export default function Inbox() {
         })
         .filter(({ counselor, last, nextAppointment }) => {
           const search = query.trim().toLowerCase();
+          const hasHistory = Boolean(last || nextAppointment);
           const matchesSearch =
             !search ||
             counselor.name.toLowerCase().includes(search) ||
             last?.text.toLowerCase().includes(search);
-          return (
-            matchesSearch &&
-            (!showOnlyActive || Boolean(last || nextAppointment))
-          );
+
+          if (search) {
+            return matchesSearch;
+          }
+          return hasHistory && matchesSearch;
         })
         .sort((a, b) =>
           (b.last?.createdAt ?? "").localeCompare(a.last?.createdAt ?? ""),
